@@ -311,6 +311,7 @@
   <div class="pin-dots">
     <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
     <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+    <div class="pin-dot" id="d4"></div>
   </div>
   <div class="pin-keypad" id="keypad">
     <button class="pin-key" data-k="1">1</button><button class="pin-key" data-k="2">2</button><button class="pin-key" data-k="3">3</button>
@@ -444,7 +445,7 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "1066669117237",
   appId:             "1:1066669117237:web:b8edf017ad93b5e951867c"
 };
-const PIN = '1234';
+const PIN = '33463';
 
 // ── DATA ─────────────────────────────────────────────────────────
 const d = s => [...s, 'Job Done'];
@@ -560,12 +561,12 @@ document.addEventListener('keydown', e => {
 function onKey(k) {
   if (!k) return;
   if (k === '⌫') pinEntry = pinEntry.slice(0,-1);
-  else if (pinEntry.length < 4) pinEntry += k;
+  else if (pinEntry.length < 5) pinEntry += k;
   syncDots();
-  if (pinEntry.length === 4) setTimeout(checkPin, 130);
+  if (pinEntry.length === 5) setTimeout(checkPin, 130);
 }
 function syncDots(err=false) {
-  for (let i=0;i<4;i++) {
+  for (let i=0;i<5;i++) {
     const d = document.getElementById(`d${i}`);
     d.classList.toggle('filled', !err && i<pinEntry.length);
     d.classList.toggle('error',  err);
