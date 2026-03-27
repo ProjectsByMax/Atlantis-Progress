@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate App Icons</title>
+<style>
+  body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #0f172a; gap: 20px; color: #fff; }
+  h2  { margin: 0; }
+  p   { margin: 0; color: #94a3b8; font-size: 14px; }
+  button { background: #0096C7; color: white; border: none; padding: 14px 28px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; }
+  button:hover { background: #0077A8; }
+  #preview { border-radius: 22%; box-shadow: 0 12px 40px rgba(0,150,200,.4); }
+</style>
+</head>
+<body>
+
+<h2>Icon Preview</h2>
+<canvas id="preview" width="192" height="192"></canvas>
+<p id="status">Click to download both icon files.</p>
+<button onclick="generate()">⬇ Download Icons</button>
+<canvas id="c" style="display:none"></canvas>
+
+<script>
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+function drawCrane(ctx, size, hookX, hookY) {
+  const u   = size / 192;
+  const col = 'rgba(4, 28, 62, 0.92)';
+
+  // ── positions ──────────────────────────────────────────────────
+  const towerCX  = size * 0.18;            // tower center x
+  const towerW   = size * 0.040;           // tower width
+  const towerTop = size * 0.04;            // top of tower
+  const towerBot = size * 0.84;            // sinks into the ocean floor
+  const jibY     = size * 0.10;            // top of jib
+  const jibH     = size * 0.028;           // jib thickness
+  const jibEndX  = size * 0.92;            // right tip of jib
+  const cjibEndX = size * 0.05;            // left tip of counter-jib
+  const cwX      = cjibEndX;              // counterweight x
+  const trolleyX = hookX;                 // trolley sits directly above hook
+
+  ctx.save();
+
+  // ── tower ───────────────────────────────────────────────────────
+  ctx.fillStyle = col;
+  ctx.fillRect(towerCX - towerW/2, towerTop, towerW, towerBot - towerTop);
+
+  // tower lattice diagonals
+  ctx.strokeStyle = 'rgba(120,180,220,0.18)';
+  ctx.lineWidth = 1.2 * u;
+  const latSegs = 8;
+  for (let i = 0; i < latSegs; i++) {
+    const y1 = towerTop + (towerBot - towerTop) / latSegs * i;
+    const y2 = towerTop + (towerBot - towerTop) / latSegs * (i + 1);
+    ctx.beginPath();
+    ctx.moveTo(towerCX - towerW/2, i%2===0 ? y1 : y2);
+    ctx.lineTo(towerCX + towerW/2, i%2===0 ? y2 : y1);
+    ctx.stroke();
+  }
+
+  // ── main jib (right) ────────────────────────────────────────────
+  ctx.fillStyle = col;
+  ctx.fillRect(towerCX - towerW/2, jibY, jibEndX - towerCX + towerW/2, jibH);
+
+  // jib bracing diagonals
+  ctx.strokeStyle = 'rgba(120,180,220,0.20)';
+  ctx.lineWidth = 1.2 * u;
+  const jibLen  = jibEndX - towerCX;
+  const jibSegs = 7;
+  for (let i = 0; i < jibSegs; i++) {
+    const x1 = towerCX + jibLen / jibSegs * i;
+    const x2 = towerCX + jibLen / jibSegs * (i + 1);
+    ctx.beginPath();
+    ctx.moveTo(x1, jibY + (i%2===0 ? 0 : jibH));
+    ctx.lineTo(x2, jibY + (i%2===0 ? jibH : 0));
+    ctx.stroke();
+  }
+
+  // ── counter-jib (left) ──────────────────────────────────────────
+  ctx.fillStyle = col;
+  ctx.fillRect(cjibEndX, jibY, towerCX - towerW/2 - cjibEndX, jibH);
+
+  // ── counterweight ───────────────────────────────────────────────
+  ctx.fillStyle = col;
+  ctx.fillRect(cwX, jibY - 3*u, 14*u, 14*u);
+  // bolt highlight
+  ctx.fillStyle = 'rgba(100,160,210,0.25)';
+  ctx.fillRect(cwX + 2*u, jibY - 1*u, 4*u, 4*u);
+
+  // ── cab at tower top ────────────────────────────────────────────
+  ctx.fillStyle = col;
+  ctx.fillRect(towerCX - towerW/2 - 3*u, jibY + jibH, towerW + 6*u, 10*u);
+
+  // ── trolley on jib ──────────────────────────────────────────────
+  ctx.fillStyle = col;
+  ctx.fillRect(trolleyX - 8*u, jibY - 3*u, 16*u, jibH + 5*u);
+  ctx.fillStyle = 'rgba(100,160,210,0.30)';
+  ctx.fillRect(trolleyX - 5*u, jibY - 1*u, 5*u, 4*u);
+
+  // ── hoist cable ─────────────────────────────────────────────────
+  ctx.strokeStyle = col;
+  ctx.lineWidth   = 2.2 * u;
+  ctx.setLineDash([3*u, 2*u]);
+  ctx.beginPath();
+  ctx.moveTo(trolleyX, jibY + jibH + 5*u);
+  ctx.lineTo(hookX,    hookY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ── hook ────────────────────────────────────────────────────────
+  ctx.strokeStyle = col;
+  ctx.lineWidth   = 2.8 * u;
+  ctx.lineCap     = 'round';
+  ctx.beginPath();
+  ctx.arc(hookX, hookY + 5*u, 5*u, Math.PI, 0); // U-shape hook
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawSeaweed(ctx, x, baseY, sw, height, color) {
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = sw; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(x, baseY);
+  for (let i = 1; i <= 5; i++) {
+    const t = i / 5;
+    const cy = baseY - height * t;
+    const xOff = (i%2===0 ? 1 : -1) * sw * 3.5;
+    ctx.quadraticCurveTo(x + xOff, cy + height/5/2, x, cy);
+  }
+  ctx.stroke(); ctx.restore();
+}
+
+function drawCoral(ctx, x, baseY, r, c1, c2) {
+  ctx.save();
+  ctx.strokeStyle = c1; ctx.lineWidth = r*0.45; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x, baseY); ctx.lineTo(x, baseY - r*1.4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, baseY - r*0.7); ctx.lineTo(x - r, baseY - r*1.5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, baseY - r*0.9); ctx.lineTo(x + r*.9, baseY - r*1.6); ctx.stroke();
+  [[x, baseY-r*1.4],[x-r, baseY-r*1.5],[x+r*.9, baseY-r*1.6]].forEach(([bx,by]) => {
+    ctx.beginPath(); ctx.arc(bx, by, r*0.42, 0, Math.PI*2);
+    ctx.fillStyle = c2; ctx.fill();
+  });
+  ctx.restore();
+}
+
+function drawBubble(ctx, x, y, r) {
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx.lineWidth = Math.max(r*0.15, 0.5); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x - r*0.32, y - r*0.32, r*0.28, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,0.42)'; ctx.fill();
+  ctx.restore();
+}
+
+function drawTrident(ctx, x, baseY, cw, ch, color) {
+  ctx.save();
+  const lw = Math.max(cw * 0.21, 1.5);
+  ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const cx = x + cw/2, topY = baseY - ch*0.86;
+  const barY = topY + ch*0.38, sideX = cw*0.37, sideTopY = topY + ch*0.10;
+  ctx.beginPath(); ctx.moveTo(cx, baseY); ctx.lineTo(cx, topY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-sideX, barY); ctx.lineTo(cx+sideX, barY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-sideX, barY); ctx.lineTo(cx-sideX, sideTopY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+sideX, barY); ctx.lineTo(cx+sideX, sideTopY); ctx.stroke();
+  ctx.restore();
+}
+
+function drawIcon(canvas, size) {
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.height = size;
+  const u = size / 192;
+
+  // clip
+  roundRect(ctx, 0, 0, size, size, size * 0.20);
+  ctx.clip();
+
+  // ── background ──────────────────────────────────────────────────
+  const bg = ctx.createLinearGradient(0, 0, 0, size);
+  bg.addColorStop(0,    '#5BC8DC');
+  bg.addColorStop(0.40, '#0096C7');
+  bg.addColorStop(0.72, '#023E8A');
+  bg.addColorStop(1,    '#03045E');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, size, size);
+
+  // ── figure out text metrics so crane knows where to hook ────────
+  let fs = size * 0.183;
+  ctx.font = `900 ${fs}px 'Arial Black','Impact',Arial,sans-serif`;
+  const rawW = ctx.measureText('ATLANTIS').width;
+  if (rawW > size * 0.90) { fs = fs * (size * 0.90) / rawW; ctx.font = `900 ${fs}px 'Arial Black','Impact',Arial,sans-serif`; }
+  const baseY  = size * 0.60;
+  const textTopY = baseY - fs * 0.86;
+  const hookX  = size * 0.52;
+  const hookY  = textTopY - 6*u;
+
+  // ── light rays ──────────────────────────────────────────────────
+  [-0.22,-0.08,0.06,0.20,0.34].forEach(a => {
+    ctx.save(); ctx.translate(size*.5, 0); ctx.rotate(a);
+    const ray = ctx.createLinearGradient(0, 0, 0, size*.65);
+    ray.addColorStop(0, 'rgba(255,255,255,0.09)');
+    ray.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = ray; ctx.fillRect(-size*.045, 0, size*.09, size*.65);
+    ctx.restore();
+  });
+
+  // ── ocean floor ─────────────────────────────────────────────────
+  const floorY = size * 0.77;
+  const floor = ctx.createLinearGradient(0, floorY, 0, size);
+  floor.addColorStop(0, '#1A4E6E'); floor.addColorStop(1, '#020B18');
+  ctx.fillStyle = floor;
+  ctx.beginPath();
+  ctx.moveTo(-2, floorY + 4*u);
+  ctx.bezierCurveTo(size*.2, floorY-8*u, size*.45, floorY+6*u, size*.65, floorY-4*u);
+  ctx.bezierCurveTo(size*.82, floorY-10*u, size*.92, floorY+4*u, size+2, floorY+2*u);
+  ctx.lineTo(size+2, size+2); ctx.lineTo(-2, size+2); ctx.closePath();
+  ctx.fill();
+
+  // rocks
+  [[0.18,0.81,0.030],[0.55,0.80,0.025],[0.88,0.82,0.022]].forEach(([rx,ry,rr]) => {
+    ctx.save(); ctx.fillStyle = '#0D2D45';
+    ctx.beginPath(); ctx.ellipse(rx*size, ry*size, rr*size*1.8, rr*size, 0, 0, Math.PI*2);
+    ctx.fill(); ctx.restore();
+  });
+
+  // seaweed
+  drawSeaweed(ctx, .10*size, floorY, 3*u, .16*size, '#1a7a4a');
+  drawSeaweed(ctx, .14*size, floorY, 2.5*u,.11*size, '#238c54');
+  drawSeaweed(ctx, .82*size, floorY, 3*u,  .14*size, '#1a7a4a');
+  drawSeaweed(ctx, .90*size, floorY, 2*u,  .09*size, '#15623c');
+
+  // coral
+  drawCoral(ctx, .28*size, floorY, 7*u, '#c0392b','#e74c3c');
+  drawCoral(ctx, .72*size, floorY, 6*u, '#d35400','#e67e22');
+  drawCoral(ctx, .50*size, floorY, 5*u, '#8e44ad','#9b59b6');
+
+  // bubbles
+  [[.08,.54,.022],[.14,.67,.014],[.20,.73,.018],[.38,.70,.012],
+   [.55,.65,.016],[.62,.72,.010],[.75,.60,.020],[.84,.68,.013],
+   [.91,.55,.018],[.32,.58,.010],[.47,.74,.014],[.68,.55,.011]
+  ].forEach(([bx,by,br]) => drawBubble(ctx, bx*size, by*size, br*size));
+
+  // ── crane (in front of underwater scene, behind text) ───────────
+  drawCrane(ctx, size, hookX, hookY);
+
+  // ── ATLANTIS text ───────────────────────────────────────────────
+  ctx.textBaseline = 'alphabetic';
+  const gap = size * 0.006;
+  const widths = 'ATLANTIS'.split('').map(ch => ctx.measureText(ch).width + gap);
+  const totalW = widths.reduce((a,b) => a+b, 0);
+  let x = (size - totalW) / 2;
+
+  ctx.shadowColor = 'rgba(0,10,60,0.70)';
+  ctx.shadowBlur = 6*u; ctx.shadowOffsetX = 1.5*u; ctx.shadowOffsetY = 2*u;
+
+  let firstT = true;
+  'ATLANTIS'.split('').forEach((char, i) => {
+    const cw = widths[i];
+    if (char === 'T' && firstT) {
+      drawTrident(ctx, x, baseY, cw - gap, fs, '#FFD700');
+      firstT = false;
+    } else {
+      ctx.fillStyle = '#FFD700';
+      ctx.fillText(char, x, baseY);
+    }
+    x += cw;
+  });
+}
+
+drawIcon(document.getElementById('preview'), 192);
+
+function dl(canvas, name) {
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png'); a.download = name; a.click();
+}
+function generate() {
+  const c = document.getElementById('c');
+  drawIcon(c, 192); dl(c, 'icon-192.png');
+  setTimeout(() => {
+    drawIcon(c, 512); dl(c, 'icon-512.png');
+    document.getElementById('status').textContent = '✅ Done! Move icon-192.png and icon-512.png into the atlantis-progress folder.';
+  }, 700);
+}
+</script>
+</body>
+</html>
