@@ -271,6 +271,26 @@
     .notes-empty div { font-size: 32px; margin-bottom: 12px; }
     .note-textarea  { width: 100%; border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 15px; font-family: inherit; color: var(--text); outline: none; resize: none; transition: border-color .15s; min-height: 130px; }
     .note-textarea:focus { border-color: var(--blue); }
+    /* ── AUTHOR PICKER ── */
+    .author-picker  { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; margin-top: 10px; }
+    .author-chip    { padding: 6px 13px; border-radius: 100px; border: 1.5px solid var(--border); background: var(--soft); font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all .15s; -webkit-user-select: none; user-select: none; }
+    .author-chip.sel[data-author="Cyril"]    { background: rgba(59,130,246,.12);  border-color: #3B82F6; color: #1D4ED8; }
+    .author-chip.sel[data-author="Gaby"]     { background: rgba(236,72,153,.12);  border-color: #EC4899; color: #BE185D; }
+    .author-chip.sel[data-author="Marshall"] { background: rgba(16,185,129,.12);  border-color: #10B981; color: #047857; }
+    .author-chip.sel[data-author="Max"]      { background: rgba(245,158,11,.12);  border-color: #F59E0B; color: #B45309; }
+    /* ── NOTE / REPLY HEADER ── */
+    .note-header  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .note-author  { font-size: 12px; font-weight: 700; }
+    .note-author[data-a="Cyril"]    { color: #1D4ED8; }
+    .note-author[data-a="Gaby"]     { color: #BE185D; }
+    .note-author[data-a="Marshall"] { color: #047857; }
+    .note-author[data-a="Max"]      { color: #B45309; }
+    .reply-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+    .reply-author { font-size: 11px; font-weight: 700; }
+    .reply-author[data-a="Cyril"]    { color: #1D4ED8; }
+    .reply-author[data-a="Gaby"]     { color: #BE185D; }
+    .reply-author[data-a="Marshall"] { color: #047857; }
+    .reply-author[data-a="Max"]      { color: #B45309; }
     /* ── REPLY STYLES ── */
     .note-footer      { display: flex; justify-content: flex-end; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--soft); }
     .note-reply-btn   { background: none; border: none; color: var(--blue); font-size: 12px; font-weight: 600; cursor: pointer; padding: 3px 8px; border-radius: 6px; font-family: inherit; display: flex; align-items: center; gap: 4px; transition: background .15s; }
@@ -391,7 +411,13 @@
   <div class="modal-card">
     <div class="modal-title">New Note</div>
     <textarea class="note-textarea" id="note-textarea" placeholder="Write a note…" maxlength="2000"></textarea>
-    <div class="modal-btns" style="margin-top:14px">
+    <div class="author-picker" id="note-author-picker">
+      <div class="author-chip" data-author="Cyril">Cyril</div>
+      <div class="author-chip" data-author="Gaby">Gaby</div>
+      <div class="author-chip" data-author="Marshall">Marshall</div>
+      <div class="author-chip" data-author="Max">Max</div>
+    </div>
+    <div class="modal-btns">
       <button class="modal-btn cancel" id="note-cancel">Cancel</button>
       <button class="modal-btn save" id="note-save">Save Note</button>
     </div>
@@ -1109,9 +1135,9 @@ const _fbReady = () => db && FIREBASE_CONFIG.apiKey !== 'REPLACE_WITH_YOUR_API_K
 let notes = _fbReady() ? [] : JSON.parse(localStorage.getItem('ap_notes') || '[]');
 function persistNotes() { if (!_fbReady()) localStorage.setItem('ap_notes', JSON.stringify(notes)); }
 
-async function dbAddNote(text) {
+async function dbAddNote(text, author) {
   const id = 'note_' + Date.now();
-  const note = { id, text, createdAt: Date.now(), replies: [] };
+  const note = { id, text, author: author||'', createdAt: Date.now(), replies: [] };
   if (_fbReady()) { await setDoc(doc(db,'notes',id), note); }
   else { notes.unshift(note); persistNotes(); renderNotes(); }
 }
@@ -1119,10 +1145,10 @@ async function dbDeleteNote(id) {
   if (_fbReady()) { await deleteDoc(doc(db,'notes',id)); }
   else { notes = notes.filter(n => n.id !== id); persistNotes(); renderNotes(); }
 }
-async function dbAddReply(noteId, text) {
+async function dbAddReply(noteId, text, author) {
   const note = notes.find(n => n.id === noteId);
   if (!note) return;
-  const newReplies = [...(note.replies||[]), { id:'reply_'+Date.now(), text, createdAt: Date.now() }];
+  const newReplies = [...(note.replies||[]), { id:'reply_'+Date.now(), text, author: author||'', createdAt: Date.now() }];
   if (_fbReady()) { await updateDoc(doc(db,'notes',noteId), { replies: newReplies }); }
   else { note.replies = newReplies; persistNotes(); renderNotes(); }
 }
@@ -1173,18 +1199,31 @@ function renderNotes() {
         const replies = (n.replies || []).sort((a,b) => a.createdAt - b.createdAt);
         const repliesHtml = replies.length ? `<div class="note-replies">${replies.map(r => `
           <div class="reply-card">
-            <div class="reply-time">${new Date(r.createdAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>
+            <div class="reply-header">
+              <span class="reply-author" data-a="${r.author||''}">${escHtml(r.author||'')}</span>
+              <span class="reply-time">${new Date(r.createdAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
+            </div>
             <div class="reply-text">${escHtml(r.text)}</div>
             <button class="reply-del" data-note-id="${n.id}" data-reply-id="${r.id}">✕</button>
           </div>`).join('')}</div>` : '';
+        const nTime = new Date(n.createdAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
         return `
         <div class="note-card">
-          <div class="note-time">${new Date(n.createdAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>
+          <div class="note-header">
+            <span class="note-author" data-a="${n.author||''}">${escHtml(n.author||'')}</span>
+            <span class="note-time">${nTime}</span>
+          </div>
           <div class="note-text">${escHtml(n.text)}</div>
           <button class="note-del" data-note-id="${n.id}">✕</button>
           ${repliesHtml}
           <div class="reply-form hidden" id="rform_${n.id}">
             <textarea class="reply-textarea" placeholder="Write a reply…" maxlength="1000"></textarea>
+            <div class="author-picker reply-author-picker">
+              <div class="author-chip" data-author="Cyril">Cyril</div>
+              <div class="author-chip" data-author="Gaby">Gaby</div>
+              <div class="author-chip" data-author="Marshall">Marshall</div>
+              <div class="author-chip" data-author="Max">Max</div>
+            </div>
             <div class="reply-form-btns">
               <button class="reply-form-btn cancel" data-rcancel="${n.id}">Cancel</button>
               <button class="reply-form-btn save"   data-rsave="${n.id}">Reply</button>
@@ -1221,14 +1260,22 @@ function renderNotes() {
   el.querySelectorAll('[data-rcancel]').forEach(btn =>
     btn.addEventListener('click', () => document.getElementById(`rform_${btn.dataset.rcancel}`).classList.add('hidden'))
   );
+  el.querySelectorAll('.reply-author-picker .author-chip').forEach(chip =>
+    chip.addEventListener('click', () => {
+      chip.closest('.author-picker').querySelectorAll('.author-chip').forEach(c => c.classList.remove('sel'));
+      chip.classList.add('sel');
+    })
+  );
   el.querySelectorAll('[data-rsave]').forEach(btn =>
     btn.addEventListener('click', async () => {
       const noteId = btn.dataset.rsave;
       const form   = document.getElementById(`rform_${noteId}`);
       const text   = form.querySelector('.reply-textarea').value.trim();
-      if (!text) { showToast('Write something first'); return; }
+      const author = form.querySelector('.author-chip.sel')?.dataset.author;
+      if (!text)   { showToast('Write something first'); return; }
+      if (!author) { showToast('Select your name'); return; }
       form.classList.add('hidden');
-      await dbAddReply(noteId, text);
+      await dbAddReply(noteId, text, author);
     })
   );
   el.querySelectorAll('.reply-textarea').forEach(ta =>
@@ -1243,6 +1290,7 @@ function renderNotes() {
 
 function openNoteModal() {
   document.getElementById('note-textarea').value = '';
+  document.getElementById('note-author-picker').querySelectorAll('.author-chip').forEach(c => c.classList.remove('sel'));
   document.getElementById('note-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('note-textarea').focus(), 50);
 }
@@ -1250,12 +1298,20 @@ function closeNoteModal() {
   document.getElementById('note-modal').classList.add('hidden');
 }
 async function saveNote() {
-  const text = document.getElementById('note-textarea').value.trim();
-  if (!text) { showToast('Write something first'); return; }
+  const text   = document.getElementById('note-textarea').value.trim();
+  const author = document.getElementById('note-author-picker').querySelector('.author-chip.sel')?.dataset.author;
+  if (!text)   { showToast('Write something first'); return; }
+  if (!author) { showToast('Select your name'); return; }
   closeNoteModal();
-  await dbAddNote(text);
+  await dbAddNote(text, author);
   showToast('Note saved');
 }
+document.getElementById('note-author-picker').querySelectorAll('.author-chip').forEach(chip =>
+  chip.addEventListener('click', () => {
+    document.getElementById('note-author-picker').querySelectorAll('.author-chip').forEach(c => c.classList.remove('sel'));
+    chip.classList.add('sel');
+  })
+);
 document.getElementById('note-cancel').addEventListener('click', closeNoteModal);
 document.getElementById('note-save').addEventListener('click', saveNote);
 document.getElementById('note-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeNoteModal(); });
