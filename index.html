@@ -67,9 +67,9 @@
     /* ── HEADER ── */
     .app-header {
       background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
-      padding: calc(14px + var(--safe-top)) 18px 0; flex-shrink: 0;
+      padding: calc(8px + var(--safe-top)) 18px 0; flex-shrink: 0;
     }
-    .header-row  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .header-row  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
     .header-title { color: #fff; font-size: 20px; font-weight: 800; letter-spacing: -.5px; text-decoration: none; display: inline-block; }
     .header-title:active { opacity: .75; }
     .header-sub   { color: rgba(255,255,255,.5); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .3px; margin-top: 2px; }
@@ -81,9 +81,9 @@
     .logout-btn { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); border-radius: 10px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .15s; flex-shrink: 0; }
     .logout-btn:active { background: rgba(255,255,255,.28); }
     .logout-btn svg { width: 15px; height: 15px; stroke: #fff; stroke-width: 2.2; fill: none; }
-    .bar-wrap      { background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); padding: 0 18px 10px; flex-shrink: 0; }
+    .bar-wrap      { background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); padding: 0 18px 6px; flex-shrink: 0; }
     .bar-label     { color: rgba(255,255,255,.5); font-size: 11px; text-align: right; font-weight: 500; }
-    .progress-road { position: relative; height: 50px; }
+    .progress-road { position: relative; height: 42px; }
     .progress-road::before { content: ''; position: absolute; bottom: 10px; left: 0; right: 34px; height: 3px; background: rgba(255,255,255,.18); border-radius: 2px; }
     .road-fill     { position: absolute; bottom: 10px; left: 0; height: 3px; background: linear-gradient(90deg, #93C5FD, #34D399); border-radius: 2px; transition: width .6s cubic-bezier(.4,0,.2,1); }
     .road-dest     { position: absolute; right: 0; bottom: 4px; font-size: 22px; line-height: 1; }
@@ -369,7 +369,7 @@
     <div class="progress-road">
       <div class="road-fill" id="bar" style="width:0%"></div>
       <div class="road-dest">🏗️</div>
-      <div class="road-vehicle" id="road-vehicle"><svg width="120" height="32" viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <div class="road-vehicle" id="road-vehicle"><svg width="105" height="28" viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <!-- ── TRAILER ── -->
         <rect x="4" y="22" width="50" height="3" rx="1" fill="rgba(255,255,255,0.65)"/>
         <!-- tongue / hitch bar -->
@@ -754,7 +754,7 @@ function renderProgress() {
   const pct   = total ? Math.round(done/total*100) : 0;
   document.getElementById('bar').style.width  = pct + '%';
   const veh = document.getElementById('road-vehicle');
-  if (veh) veh.style.left = `calc(${pct} * (100% - 154px) / 100)`;
+  if (veh) veh.style.left = `calc(${pct} * (100% - 139px) / 100)`;
   document.getElementById('bar-label').textContent  = `${done} of ${total} steps complete`;
   document.getElementById('pct-badge').textContent  = pct + '%';
 
