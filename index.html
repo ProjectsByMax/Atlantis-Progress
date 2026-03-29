@@ -187,6 +187,8 @@
     .step-search-input { width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 12px; font-size: 14px; font-family: inherit; color: var(--text); outline: none; transition: border-color .15s; margin-bottom: 10px; }
     .step-search-input:focus { border-color: var(--blue); }
     .step-chip-new { border-style: dashed; border-color: var(--blue); color: var(--blue); background: var(--blue-tint2); }
+    .chip-del { background: none; border: none; padding: 0 0 0 5px; font-size: 10px; cursor: pointer; color: inherit; opacity: 0.55; line-height: 1; }
+    .chip-del:hover { opacity: 1; }
 
     /* plus + gear buttons */
     .plus-btn, .gear-btn { width: 30px; height: 30px; border-radius: 9px; background: var(--blue-tint2); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .15s; }
@@ -569,12 +571,19 @@ let activeSections = _savedSec
 let activeItems = _savedItems
   ? JSON.parse(_savedItems)
   : [...ITEMS.map(i => ({...i, steps:[...i.steps]})), ..._legacy];
+let customSteps = JSON.parse(localStorage.getItem('ap_custom_steps') || '[]');
 const allItems = () => activeItems;
 function persistState() {
   localStorage.setItem('ap_sections', JSON.stringify(activeSections));
   localStorage.setItem('ap_items',    JSON.stringify(activeItems));
   if (db && FIREBASE_CONFIG.apiKey !== 'REPLACE_WITH_YOUR_API_KEY') {
-    setDoc(doc(db,'config','layout'), { sections: activeSections, items: activeItems, updatedAt: serverTimestamp() });
+    setDoc(doc(db,'config','layout'), { sections: activeSections, items: activeItems, customSteps, updatedAt: serverTimestamp() });
+  }
+}
+function persistCustomSteps() {
+  localStorage.setItem('ap_custom_steps', JSON.stringify(customSteps));
+  if (db && FIREBASE_CONFIG.apiKey !== 'REPLACE_WITH_YOUR_API_KEY') {
+    updateDoc(doc(db,'config','layout'), { customSteps });
   }
 }
 let addModalSection = null;
@@ -643,10 +652,12 @@ if (db && FIREBASE_CONFIG.apiKey !== 'REPLACE_WITH_YOUR_API_KEY') {
   onSnapshot(layoutRef, snap => {
     if (snap.exists()) {
       const data = snap.data();
-      activeSections = data.sections || activeSections;
-      activeItems    = data.items    || activeItems;
-      localStorage.setItem('ap_sections', JSON.stringify(activeSections));
-      localStorage.setItem('ap_items',    JSON.stringify(activeItems));
+      activeSections = data.sections   || activeSections;
+      activeItems    = data.items      || activeItems;
+      customSteps    = data.customSteps || customSteps;
+      localStorage.setItem('ap_sections',    JSON.stringify(activeSections));
+      localStorage.setItem('ap_items',       JSON.stringify(activeItems));
+      localStorage.setItem('ap_custom_steps', JSON.stringify(customSteps));
       renderProgress(); renderFiles();
     } else {
       // First run — push defaults up to Firestore
@@ -1010,16 +1021,18 @@ function showModalPage(n) {
 function renderChipPool() {
   const pool = document.getElementById('chip-pool');
   const q = addSearchQuery.toLowerCase().trim();
-  const sorted = [...STEP_POOL].sort((a,b) => a.localeCompare(b));
-  const filtered = q ? sorted.filter(s => s.toLowerCase().includes(q)) : sorted;
-  const exactMatch = STEP_POOL.some(s => s.toLowerCase() === q);
+  const allPool = [...new Set([...STEP_POOL, ...customSteps])].sort((a,b) => a.localeCompare(b));
+  const filtered = q ? allPool.filter(s => s.toLowerCase().includes(q)) : allPool;
+  const exactMatch = allPool.some(s => s.toLowerCase() === q);
   const newChip = (q && !exactMatch)
     ? `<div class="step-chip step-chip-new" data-step-new="${addSearchQuery}">+ Add "${addSearchQuery}"</div>` : '';
   pool.innerHTML = filtered.map(step => {
     const idx = selectedSteps.indexOf(step);
     const sel = idx !== -1;
+    const delBtn = customSteps.includes(step)
+      ? `<button class="chip-del" data-del-step="${step}" title="Remove from pool">✕</button>` : '';
     return `<div class="step-chip ${sel?'sel':''}" data-step="${step}">
-      ${step}${sel ? `<span class="chip-num">${idx+1}</span>` : ''}
+      ${step}${sel ? `<span class="chip-num">${idx+1}</span>` : ''}${delBtn}
     </div>`;
   }).join('') + newChip;
   pool.querySelectorAll('.step-chip[data-step]').forEach(chip =>
@@ -1031,10 +1044,22 @@ function renderChipPool() {
       renderChipPool();
     })
   );
+  pool.querySelectorAll('.chip-del[data-del-step]').forEach(btn =>
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (!confirm(`Remove "${btn.dataset.delStep}" from the step pool?`)) return;
+      customSteps = customSteps.filter(s => s !== btn.dataset.delStep);
+      persistCustomSteps();
+      renderChipPool();
+    })
+  );
   pool.querySelectorAll('[data-step-new]').forEach(chip =>
     chip.addEventListener('click', () => {
       const newStep = chip.dataset.stepNew.trim();
-      if (newStep && !STEP_POOL.includes(newStep)) STEP_POOL.push(newStep);
+      if (newStep && !STEP_POOL.includes(newStep) && !customSteps.includes(newStep)) {
+        customSteps.push(newStep);
+        persistCustomSteps();
+      }
       if (!selectedSteps.includes(newStep)) selectedSteps.push(newStep);
       addSearchQuery = '';
       document.getElementById('add-step-search').value = '';
@@ -1115,16 +1140,26 @@ function closeGearModal() {
 function renderGearChips() {
   const pool = document.getElementById('gear-chip-pool');
   const q = gearSearchQuery.toLowerCase().trim();
-  const sorted = [...STEP_POOL].sort((a,b) => a.localeCompare(b));
-  const filtered = q ? sorted.filter(s => s.toLowerCase().includes(q)) : sorted;
-  const exactMatch = STEP_POOL.some(s => s.toLowerCase() === q);
+  const allPool = [...new Set([...STEP_POOL, ...customSteps])].sort((a,b) => a.localeCompare(b));
+  const filtered = q ? allPool.filter(s => s.toLowerCase().includes(q)) : allPool;
+  // Steps on this item not in any pool (legacy orphans) — always show at top
+  const orphans = gearItemSteps.filter(s => !STEP_POOL.includes(s) && !customSteps.includes(s));
+  const exactMatch = allPool.some(s => s.toLowerCase() === q) || (q && orphans.some(s => s.toLowerCase() === q));
   const newChip = (q && !exactMatch)
     ? `<div class="step-chip step-chip-new" data-gstep-new="${gearSearchQuery}">+ Add "${gearSearchQuery}"</div>` : '';
-  pool.innerHTML = filtered.map(step => {
+  const orphanChips = orphans.map(step => {
+    const idx = gearItemSteps.indexOf(step);
+    return `<div class="step-chip sel" data-gstep="${step}" title="Tap to remove">
+      ${step}<span class="chip-num">${idx+1}</span>
+    </div>`;
+  }).join('');
+  pool.innerHTML = orphanChips + filtered.map(step => {
     const idx = gearItemSteps.indexOf(step);
     const sel = idx !== -1;
+    const delBtn = customSteps.includes(step)
+      ? `<button class="chip-del" data-del-step="${step}" title="Remove from pool">✕</button>` : '';
     return `<div class="step-chip ${sel?'sel':''}" data-gstep="${step}">
-      ${step}${sel?`<span class="chip-num">${idx+1}</span>`:''}
+      ${step}${sel?`<span class="chip-num">${idx+1}</span>`:''}${delBtn}
     </div>`;
   }).join('') + newChip;
   pool.querySelectorAll('.step-chip[data-gstep]').forEach(chip =>
@@ -1135,10 +1170,22 @@ function renderGearChips() {
       renderGearChips();
     })
   );
+  pool.querySelectorAll('.chip-del[data-del-step]').forEach(btn =>
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (!confirm(`Remove "${btn.dataset.delStep}" from the step pool?`)) return;
+      customSteps = customSteps.filter(s => s !== btn.dataset.delStep);
+      persistCustomSteps();
+      renderGearChips();
+    })
+  );
   pool.querySelectorAll('[data-gstep-new]').forEach(chip =>
     chip.addEventListener('click', () => {
       const newStep = chip.dataset.gstepNew.trim();
-      if (newStep && !STEP_POOL.includes(newStep)) STEP_POOL.push(newStep);
+      if (newStep && !STEP_POOL.includes(newStep) && !customSteps.includes(newStep)) {
+        customSteps.push(newStep);
+        persistCustomSteps();
+      }
       if (!gearItemSteps.includes(newStep)) gearItemSteps.push(newStep);
       gearSearchQuery = '';
       document.getElementById('gear-step-search').value = '';
