@@ -161,6 +161,9 @@
     .hstep-node.active.jobdone { background: var(--green); box-shadow: 0 2px 8px rgba(16,185,129,.35); }
     .hstep-node.locked { background: var(--soft); border: 2px solid var(--border); color: var(--muted); cursor: default; }
     .hstep-lbl  { font-size: 10px; font-weight: 500; color: var(--muted); text-align: center; margin-top: 5px; line-height: 1.25; width: 48px; word-break: break-word; }
+    .hstep-sm .hstep-lbl  { font-size: 8.5px; width: 40px; }
+    .hstep-sm .hstep-col  { width: 40px; }
+    .hstep-sm .hstep-node { width: 28px; height: 28px; font-size: 11px; }
     .hstep-conn { flex: 1; height: 2px; background: var(--border); margin-top: 17px; border-radius: 2px; transition: background .3s; min-width: 4px; }
     .hstep-conn.done { background: var(--green); }
     /* ── BRIDGE SVG ── */
@@ -880,7 +883,7 @@ function renderItem(item) {
           <button class="item-gear-btn" data-gear-item="${item.id}">${gearSVG}</button>
         </span>
       </div>
-      <div class="hstep">${nodesHTML}</div>
+      <div class="hstep${item.steps.length >= 5 ? ' hstep-sm' : ''}">${nodesHTML}</div>
     </div>`;
 }
 
