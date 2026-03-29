@@ -269,8 +269,8 @@
     .note-date-lbl  { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; padding-left: 2px; }
     .note-card      { background: var(--card); border-radius: 16px; padding: 14px; box-shadow: 0 1px 3px rgba(59,130,246,.07), 0 4px 16px rgba(59,130,246,.05); margin-bottom: 8px; position: relative; }
     .note-time      { font-size: 11px; color: var(--muted); font-weight: 500; margin-bottom: 8px; }
-    .note-text      { font-size: 14px; line-height: 1.55; color: var(--text); white-space: pre-wrap; word-break: break-word; padding-right: 28px; }
-    .note-del       { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: color .15s; }
+    .note-text      { font-size: 14px; line-height: 1.55; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+    .note-del       { background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: color .15s; flex-shrink: 0; }
     .note-del:active { color: var(--red); }
     .notes-empty    { text-align: center; color: var(--muted); font-size: 14px; margin-top: 48px; line-height: 1.6; }
     .notes-empty div { font-size: 32px; margin-bottom: 12px; }
@@ -1310,10 +1310,12 @@ function renderNotes() {
         <div class="note-card">
           <div class="note-header">
             <span class="note-author" data-a="${n.author||''}">${escHtml(n.author||'')}</span>
-            <span class="note-time">${nTime}</span>
+            <div style="display:flex;align-items:center;gap:4px">
+              <span class="note-time">${nTime}</span>
+              <button class="note-del" data-note-id="${n.id}">✕</button>
+            </div>
           </div>
           <div class="note-text">${escHtml(n.text)}</div>
-          <button class="note-del" data-note-id="${n.id}">✕</button>
           ${repliesHtml}
           <div class="reply-form hidden" id="rform_${n.id}">
             <textarea class="reply-textarea" placeholder="Write a reply…" maxlength="1000"></textarea>
