@@ -88,9 +88,11 @@
     .road-fill     { position: absolute; bottom: 10px; left: 0; height: 3px; background: linear-gradient(90deg, #93C5FD, #34D399); border-radius: 2px; transition: width .6s cubic-bezier(.4,0,.2,1); }
     .road-dest     { position: absolute; right: 0; bottom: 4px; font-size: 22px; line-height: 1; cursor: pointer; transition: transform .15s; }
     .road-dest:active { transform: scale(1.2); }
-    .vision-card   { background: #000; border-radius: 24px 24px 0 0; width: 100%; max-width: 480px; overflow: hidden; cursor: pointer; animation: slideUp .3s cubic-bezier(.4,0,.2,1); }
-    .vision-card img { width: 100%; display: block; max-height: 72vh; object-fit: cover; }
-    .vision-label  { padding: 14px 18px 28px; font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -.3px; background: #000; }
+    .vision-card   { background: #000; border-radius: 24px 24px 0 0; width: 100%; max-width: 480px; overflow: hidden; cursor: pointer; animation: slideUp .3s cubic-bezier(.4,0,.2,1); max-height: 95vh; overflow-y: auto; }
+    .vision-card img { width: 100%; display: block; object-fit: contain; }
+    .vision-label  { padding: 12px 18px 24px; background: #000; }
+    .vision-label-title { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+    .vision-label-sub   { font-size: 11px; color: rgba(255,255,255,.45); margin-top: 3px; font-weight: 500; }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .road-vehicle  { position: absolute; bottom: 10px; transition: left .6s cubic-bezier(.4,0,.2,1); line-height: 0; }
 
@@ -454,7 +456,10 @@
 <div class="modal-overlay hidden" id="vision-modal">
   <div class="vision-card">
     <img src="card.jpg" alt="Mizner Storall of Atlantis" id="vision-img">
-    <div class="vision-label">Mizner Storall of Atlantis</div>
+    <div class="vision-label">
+      <div class="vision-label-title">Mizner Storall of Atlantis</div>
+      <div class="vision-label-sub">tap to close</div>
+    </div>
   </div>
 </div>
 <input type="file" id="file-input" style="display:none" multiple accept="image/*,application/pdf,.doc,.docx,.xlsx,.xls">
@@ -656,7 +661,9 @@ let pinEntry = '';
 document.querySelectorAll('.pin-key').forEach(k => k.addEventListener('click', () => onKey(k.dataset.k)));
 document.addEventListener('keydown', e => {
   if (document.getElementById('pin-screen').classList.contains('hidden')) return;
-  if (/^[0-9]$/.test(e.key)) onKey(e.key);
+  if (/^[0-9]$/.test(e.key)) { onKey(e.key); return; }
+  const numpad = e.code?.match(/^Numpad([0-9])$/);
+  if (numpad) { onKey(numpad[1]); return; }
   if (e.key === 'Backspace') onKey('⌫');
 });
 
