@@ -892,8 +892,10 @@ async function uploadFile(file, secId) {
 
 // ── RENDER: FILES ─────────────────────────────────────────────────
 function renderFiles() {
+  const clipSVG = `<svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>`;
   document.getElementById('tab-files').innerHTML = activeSections.map(sec => {
     const secFiles = attachments.filter(a => a.section === sec.id);
+    const ct = secFiles.length;
     return `
       <div class="fcard">
         <div class="fcard-head">
@@ -901,14 +903,21 @@ function renderFiles() {
             <span>${sec.icon}</span>
             <span class="fcard-name">${sec.name}</span>
           </div>
-          ${secFiles.length ? `<span class="fcard-ct">${secFiles.length} file${secFiles.length>1?'s':''}</span>` : ''}
+          <div style="display:flex;align-items:center;gap:8px">
+            ${ct ? `<span class="fcard-ct">${ct} file${ct>1?'s':''}</span>` : ''}
+            <button class="clip-btn ${ct>0?'lit':''}" data-sec="${sec.id}">
+              ${clipSVG}
+              ${ct>0?`<span class="clip-badge">${ct}</span>`:''}
+            </button>
+          </div>
         </div>
-        ${secFiles.length
-          ? secFiles.map(f => fileRow(f)).join('')
-          : `<div class="fempty">No files attached yet</div>`}
+        ${ct ? secFiles.map(f => fileRow(f)).join('') : `<div class="fempty">No files attached yet</div>`}
       </div>`;
   }).join('');
 
+  document.getElementById('tab-files').querySelectorAll('.clip-btn').forEach(btn =>
+    btn.addEventListener('click', () => { uploadSection = btn.dataset.sec; document.getElementById('file-input').click(); })
+  );
   document.querySelectorAll('.fdel').forEach(btn =>
     btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); deleteFile(btn.dataset.id, btn.dataset.path); })
   );
