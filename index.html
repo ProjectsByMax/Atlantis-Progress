@@ -184,6 +184,9 @@
     .step-chip  { padding: 8px 13px; border-radius: 100px; background: var(--soft); border: 1.5px solid var(--border); font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px; -webkit-user-select: none; user-select: none; }
     .step-chip.sel { background: var(--blue-tint); border-color: var(--blue); color: var(--blue); }
     .chip-num   { width: 18px; height: 18px; border-radius: 50%; background: var(--blue); color: #fff; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .step-search-input { width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 12px; font-size: 14px; font-family: inherit; color: var(--text); outline: none; transition: border-color .15s; margin-bottom: 10px; }
+    .step-search-input:focus { border-color: var(--blue); }
+    .step-chip-new { border-style: dashed; border-color: var(--blue); color: var(--blue); background: var(--blue-tint2); }
 
     /* plus + gear buttons */
     .plus-btn, .gear-btn { width: 30px; height: 30px; border-radius: 9px; background: var(--blue-tint2); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .15s; }
@@ -272,7 +275,7 @@
     .note-textarea  { width: 100%; border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 15px; font-family: inherit; color: var(--text); outline: none; resize: none; transition: border-color .15s; min-height: 130px; }
     .note-textarea:focus { border-color: var(--blue); }
     /* ── AUTHOR PICKER ── */
-    .author-picker  { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; margin-top: 10px; }
+    .author-picker  { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; margin-top: 10px; }
     .author-chip    { padding: 6px 13px; border-radius: 100px; border: 1.5px solid var(--border); background: var(--soft); font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all .15s; -webkit-user-select: none; user-select: none; }
     .author-chip.sel[data-author="Cyril"]    { background: rgba(59,130,246,.12);  border-color: #3B82F6; color: #1D4ED8; }
     .author-chip.sel[data-author="Gaby"]     { background: rgba(236,72,153,.12);  border-color: #EC4899; color: #BE185D; }
@@ -397,7 +400,8 @@
     <div class="modal-title">Edit Item</div>
     <div class="modal-sub">Name</div>
     <input class="modal-input" id="gear-name-input" type="text" maxlength="60">
-    <div class="modal-sub" style="margin-top:14px;margin-bottom:8px">Steps (tap in order)</div>
+    <div class="modal-sub" style="margin-top:14px;margin-bottom:6px">Steps (tap in order)</div>
+    <input class="step-search-input" id="gear-step-search" type="text" placeholder="Search or add a step…" autocomplete="off">
     <div class="chip-pool" id="gear-chip-pool"></div>
     <div class="modal-btns" style="margin-top:14px">
       <button class="modal-btn cancel" id="gear-cancel">Cancel</button>
@@ -451,6 +455,7 @@
     <div class="modal-page hidden" id="modal-p2">
       <div class="modal-title">Choose Steps</div>
       <div class="modal-sub">Tap in the order you want them to appear</div>
+      <input class="step-search-input" id="add-step-search" type="text" placeholder="Search or add a step…" autocomplete="off">
       <div class="chip-pool" id="chip-pool"></div>
       <div class="modal-btns">
         <button class="modal-btn cancel" id="modal-back">← Back</button>
@@ -980,6 +985,7 @@ const STEP_POOL = [
 ];
 
 let selectedSteps = [];
+let addSearchQuery = '';
 
 function openAddModal(secId) {
   addModalSection = secId;
@@ -999,23 +1005,39 @@ function closeAddModal() {
 function showModalPage(n) {
   document.getElementById('modal-p1').classList.toggle('hidden', n !== 1);
   document.getElementById('modal-p2').classList.toggle('hidden', n !== 2);
-  if (n === 2) renderChipPool();
+  if (n === 2) { addSearchQuery = ''; document.getElementById('add-step-search').value = ''; renderChipPool(); }
 }
 function renderChipPool() {
   const pool = document.getElementById('chip-pool');
-  pool.innerHTML = STEP_POOL.map(step => {
+  const q = addSearchQuery.toLowerCase().trim();
+  const sorted = [...STEP_POOL].sort((a,b) => a.localeCompare(b));
+  const filtered = q ? sorted.filter(s => s.toLowerCase().includes(q)) : sorted;
+  const exactMatch = STEP_POOL.some(s => s.toLowerCase() === q);
+  const newChip = (q && !exactMatch)
+    ? `<div class="step-chip step-chip-new" data-step-new="${addSearchQuery}">+ Add "${addSearchQuery}"</div>` : '';
+  pool.innerHTML = filtered.map(step => {
     const idx = selectedSteps.indexOf(step);
     const sel = idx !== -1;
     return `<div class="step-chip ${sel?'sel':''}" data-step="${step}">
       ${step}${sel ? `<span class="chip-num">${idx+1}</span>` : ''}
     </div>`;
-  }).join('');
-  pool.querySelectorAll('.step-chip').forEach(chip =>
+  }).join('') + newChip;
+  pool.querySelectorAll('.step-chip[data-step]').forEach(chip =>
     chip.addEventListener('click', () => {
       const s = chip.dataset.step;
       const idx = selectedSteps.indexOf(s);
       if (idx !== -1) selectedSteps.splice(idx, 1);
       else selectedSteps.push(s);
+      renderChipPool();
+    })
+  );
+  pool.querySelectorAll('[data-step-new]').forEach(chip =>
+    chip.addEventListener('click', () => {
+      const newStep = chip.dataset.stepNew.trim();
+      if (newStep && !STEP_POOL.includes(newStep)) STEP_POOL.push(newStep);
+      if (!selectedSteps.includes(newStep)) selectedSteps.push(newStep);
+      addSearchQuery = '';
+      document.getElementById('add-step-search').value = '';
       renderChipPool();
     })
   );
@@ -1073,6 +1095,7 @@ document.getElementById('add-modal').addEventListener('click', e => { if (e.targ
 // ── GEAR MODAL ───────────────────────────────────────────────────
 let gearItemId    = null;
 let gearItemSteps = [];
+let gearSearchQuery = '';
 
 function openGearModal(itemId) {
   gearItemId = itemId;
@@ -1080,6 +1103,8 @@ function openGearModal(itemId) {
   if (!item) return;
   document.getElementById('gear-name-input').value = item.name;
   gearItemSteps = item.steps.slice(0, -1); // strip Job Done
+  gearSearchQuery = '';
+  document.getElementById('gear-step-search').value = '';
   renderGearChips();
   document.getElementById('gear-modal').classList.remove('hidden');
 }
@@ -1089,18 +1114,34 @@ function closeGearModal() {
 }
 function renderGearChips() {
   const pool = document.getElementById('gear-chip-pool');
-  pool.innerHTML = STEP_POOL.map(step => {
+  const q = gearSearchQuery.toLowerCase().trim();
+  const sorted = [...STEP_POOL].sort((a,b) => a.localeCompare(b));
+  const filtered = q ? sorted.filter(s => s.toLowerCase().includes(q)) : sorted;
+  const exactMatch = STEP_POOL.some(s => s.toLowerCase() === q);
+  const newChip = (q && !exactMatch)
+    ? `<div class="step-chip step-chip-new" data-gstep-new="${gearSearchQuery}">+ Add "${gearSearchQuery}"</div>` : '';
+  pool.innerHTML = filtered.map(step => {
     const idx = gearItemSteps.indexOf(step);
     const sel = idx !== -1;
     return `<div class="step-chip ${sel?'sel':''}" data-gstep="${step}">
       ${step}${sel?`<span class="chip-num">${idx+1}</span>`:''}
     </div>`;
-  }).join('');
+  }).join('') + newChip;
   pool.querySelectorAll('.step-chip[data-gstep]').forEach(chip =>
     chip.addEventListener('click', () => {
       const s = chip.dataset.gstep;
       const idx = gearItemSteps.indexOf(s);
       if (idx !== -1) gearItemSteps.splice(idx, 1); else gearItemSteps.push(s);
+      renderGearChips();
+    })
+  );
+  pool.querySelectorAll('[data-gstep-new]').forEach(chip =>
+    chip.addEventListener('click', () => {
+      const newStep = chip.dataset.gstepNew.trim();
+      if (newStep && !STEP_POOL.includes(newStep)) STEP_POOL.push(newStep);
+      if (!gearItemSteps.includes(newStep)) gearItemSteps.push(newStep);
+      gearSearchQuery = '';
+      document.getElementById('gear-step-search').value = '';
       renderGearChips();
     })
   );
@@ -1129,6 +1170,8 @@ document.getElementById('gear-del-item').addEventListener('click', () => {
 document.getElementById('gear-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeGearModal();
 });
+document.getElementById('gear-step-search').addEventListener('input', e => { gearSearchQuery = e.target.value; renderGearChips(); });
+document.getElementById('add-step-search').addEventListener('input', e => { addSearchQuery = e.target.value; renderChipPool(); });
 
 // ── NOTES ─────────────────────────────────────────────────────────
 const _fbReady = () => db && FIREBASE_CONFIG.apiKey !== 'REPLACE_WITH_YOUR_API_KEY';
