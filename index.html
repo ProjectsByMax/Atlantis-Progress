@@ -369,40 +369,49 @@
     <div class="progress-road">
       <div class="road-fill" id="bar" style="width:0%"></div>
       <div class="road-dest">🏗️</div>
-      <div class="road-vehicle" id="road-vehicle"><svg width="110" height="28" viewBox="0 0 110 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- trailer frame -->
-        <rect x="4" y="20" width="44" height="3" rx="1" fill="rgba(255,255,255,0.7)"/>
-        <!-- trailer tongue to RV hitch -->
-        <line x1="48" y1="21.5" x2="58" y2="21.5" stroke="rgba(255,255,255,0.65)" stroke-width="2" stroke-linecap="round"/>
+      <div class="road-vehicle" id="road-vehicle"><svg width="120" height="32" viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- ── TRAILER ── -->
+        <rect x="4" y="22" width="50" height="3" rx="1" fill="rgba(255,255,255,0.65)"/>
+        <!-- tongue / hitch bar -->
+        <line x1="54" y1="23.5" x2="68" y2="23.5" stroke="rgba(255,255,255,0.6)" stroke-width="2.5" stroke-linecap="round"/>
         <!-- trailer wheels -->
-        <circle cx="15" cy="24" r="4" fill="rgba(10,20,55,0.85)"/><circle cx="15" cy="24" r="2" fill="rgba(255,255,255,0.4)"/>
-        <circle cx="36" cy="24" r="4" fill="rgba(10,20,55,0.85)"/><circle cx="36" cy="24" r="2" fill="rgba(255,255,255,0.4)"/>
-        <!-- boat hull -->
-        <path d="M5,20 Q26,5 47,20 Z" fill="rgba(255,255,255,0.88)"/>
-        <!-- boat interior -->
-        <path d="M9,20 Q26,8 43,20 Z" fill="rgba(147,197,253,0.38)"/>
-        <!-- boat windshield -->
-        <rect x="21" y="12" width="10" height="5" rx="1" fill="rgba(147,197,253,0.7)"/>
-        <!-- RV body -->
-        <rect x="58" y="5" width="36" height="17" rx="2" fill="rgba(255,255,255,0.9)"/>
-        <!-- RV cab / slanted windshield (front = right side) -->
-        <path d="M94,5 L106,9 L108,12 L108,22 L94,22 Z" fill="rgba(248,250,252,0.88)"/>
-        <!-- RV side windows -->
-        <rect x="62" y="8" width="7" height="6" rx="1" fill="rgba(147,197,253,0.65)"/>
-        <rect x="73" y="8" width="7" height="6" rx="1" fill="rgba(147,197,253,0.65)"/>
-        <rect x="84" y="8" width="7" height="6" rx="1" fill="rgba(147,197,253,0.65)"/>
-        <!-- RV cab window -->
-        <path d="M95,8 L105,11 L105,21 L95,21 Z" fill="rgba(147,197,253,0.5)"/>
-        <!-- RV door line -->
-        <line x1="92" y1="5" x2="92" y2="22" stroke="rgba(30,58,138,0.25)" stroke-width="1"/>
-        <!-- RV headlight -->
-        <rect x="107" y="14" width="2" height="4" rx="0.5" fill="rgba(255,245,150,0.92)"/>
-        <!-- RV hitch ball at rear -->
-        <circle cx="58" cy="21" r="2.5" fill="rgba(255,255,255,0.6)"/>
+        <circle cx="17" cy="28" r="4" fill="rgba(8,18,50,0.9)"/><circle cx="17" cy="28" r="2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="40" cy="28" r="4" fill="rgba(8,18,50,0.9)"/><circle cx="40" cy="28" r="2" fill="rgba(255,255,255,0.3)"/>
+        <!-- ── BOAT ── bow on right (direction of travel) -->
+        <!-- hull outer -->
+        <path d="M 4,22 L 48,22 Q 53,22 53,17 Q 47,10 22,11 L 4,14 Z" fill="rgba(255,255,255,0.92)"/>
+        <!-- hull inner / deck -->
+        <path d="M 6,22 L 46,22 Q 50,22 50,18 Q 44,13 22,13 L 6,16 Z" fill="rgba(147,197,253,0.38)"/>
+        <!-- windshield -->
+        <rect x="28" y="12" width="11" height="5" rx="1" fill="rgba(147,197,253,0.75)"/>
+        <!-- outboard motor at stern -->
+        <rect x="2" y="16" width="4" height="7" rx="0.5" fill="rgba(200,210,230,0.8)"/>
+        <!-- hull accent stripe -->
+        <line x1="4" y1="18" x2="50" y2="20" stroke="rgba(59,130,246,0.4)" stroke-width="1.5"/>
+        <!-- ── RV ── cab / windshield faces right -->
+        <!-- main body -->
+        <rect x="70" y="5" width="38" height="17" rx="2" fill="rgba(255,255,255,0.92)"/>
+        <!-- cab (slanted roof to windshield) -->
+        <path d="M 108,5 Q 117,5 119,11 L 119,22 L 108,22 Z" fill="rgba(245,248,255,0.9)"/>
+        <!-- cab windshield glass -->
+        <path d="M 108,7 Q 116,7 118,12 L 118,21 L 108,21 Z" fill="rgba(147,197,253,0.55)"/>
+        <!-- body windows -->
+        <rect x="74" y="8" width="7" height="6" rx="1" fill="rgba(147,197,253,0.65)"/>
+        <rect x="85" y="8" width="7" height="6" rx="1" fill="rgba(147,197,253,0.65)"/>
+        <rect x="96" y="8" width="7" height="6" rx="1" fill="rgba(147,197,253,0.65)"/>
+        <!-- body stripe -->
+        <rect x="70" y="17" width="49" height="2.5" fill="rgba(147,197,253,0.35)"/>
+        <!-- door -->
+        <line x1="105" y1="5" x2="105" y2="22" stroke="rgba(30,58,138,0.22)" stroke-width="1"/>
+        <!-- headlight -->
+        <rect x="117" y="15" width="2" height="4" rx="0.5" fill="rgba(255,245,140,0.95)"/>
+        <!-- rear bumper + hitch ball -->
+        <rect x="68" y="19" width="4" height="4" rx="1" fill="rgba(255,255,255,0.5)"/>
+        <circle cx="70" cy="23.5" r="2" fill="rgba(255,255,255,0.65)"/>
         <!-- RV wheels -->
-        <circle cx="68" cy="24" r="4" fill="rgba(10,20,55,0.85)"/><circle cx="68" cy="24" r="2" fill="rgba(255,255,255,0.4)"/>
-        <circle cx="83" cy="24" r="4" fill="rgba(10,20,55,0.85)"/><circle cx="83" cy="24" r="2" fill="rgba(255,255,255,0.4)"/>
-        <circle cx="103" cy="24" r="4" fill="rgba(10,20,55,0.85)"/><circle cx="103" cy="24" r="2" fill="rgba(255,255,255,0.4)"/>
+        <circle cx="81" cy="28" r="4" fill="rgba(8,18,50,0.9)"/><circle cx="81" cy="28" r="2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="99" cy="28" r="4" fill="rgba(8,18,50,0.9)"/><circle cx="99" cy="28" r="2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="114" cy="28" r="4" fill="rgba(8,18,50,0.9)"/><circle cx="114" cy="28" r="2" fill="rgba(255,255,255,0.3)"/>
       </svg></div>
     </div>
     <div class="bar-label" id="bar-label">0 of 0 steps complete</div>
@@ -745,7 +754,7 @@ function renderProgress() {
   const pct   = total ? Math.round(done/total*100) : 0;
   document.getElementById('bar').style.width  = pct + '%';
   const veh = document.getElementById('road-vehicle');
-  if (veh) veh.style.left = `calc(${pct} * (100% - 144px) / 100)`;
+  if (veh) veh.style.left = `calc(${pct} * (100% - 154px) / 100)`;
   document.getElementById('bar-label').textContent  = `${done} of ${total} steps complete`;
   document.getElementById('pct-badge').textContent  = pct + '%';
 
