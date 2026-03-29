@@ -35,7 +35,7 @@
     /* ── PIN ── */
     #pin-screen {
       position: fixed; inset: 0; z-index: 1000;
-      background: linear-gradient(160deg, #1E3A8A 0%, #3B82F6 100%);
+      background: linear-gradient(160deg, rgba(10,28,80,0.72) 0%, rgba(30,80,160,0.60) 100%), url('pin page.png') center/cover no-repeat;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       padding: calc(48px + var(--safe-top)) 24px 48px;
     }
@@ -86,7 +86,12 @@
     .progress-road { position: relative; height: 42px; }
     .progress-road::before { content: ''; position: absolute; bottom: 10px; left: 0; right: 34px; height: 3px; background: rgba(255,255,255,.18); border-radius: 2px; }
     .road-fill     { position: absolute; bottom: 10px; left: 0; height: 3px; background: linear-gradient(90deg, #93C5FD, #34D399); border-radius: 2px; transition: width .6s cubic-bezier(.4,0,.2,1); }
-    .road-dest     { position: absolute; right: 0; bottom: 4px; font-size: 22px; line-height: 1; }
+    .road-dest     { position: absolute; right: 0; bottom: 4px; font-size: 22px; line-height: 1; cursor: pointer; transition: transform .15s; }
+    .road-dest:active { transform: scale(1.2); }
+    .vision-card   { background: #000; border-radius: 24px 24px 0 0; width: 100%; max-width: 480px; overflow: hidden; cursor: pointer; animation: slideUp .3s cubic-bezier(.4,0,.2,1); }
+    .vision-card img { width: 100%; display: block; max-height: 72vh; object-fit: cover; }
+    .vision-label  { padding: 14px 18px 28px; font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -.3px; background: #000; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .road-vehicle  { position: absolute; bottom: 10px; transition: left .6s cubic-bezier(.4,0,.2,1); line-height: 0; }
 
     /* ── SCROLL ── */
@@ -445,6 +450,13 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="modal-overlay hidden" id="vision-modal">
+  <div class="vision-card">
+    <img src="card.jpg" alt="Mizner Storall of Atlantis" id="vision-img">
+    <div class="vision-label">Mizner Storall of Atlantis</div>
+  </div>
+</div>
 <input type="file" id="file-input" style="display:none" multiple accept="image/*,application/pdf,.doc,.docx,.xlsx,.xls">
 
 <div class="modal-overlay hidden" id="gear-modal">
@@ -1481,6 +1493,17 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
+
+// ── VISION CARD ───────────────────────────────────────────────────
+document.querySelector('.road-dest').addEventListener('click', () => {
+  document.getElementById('vision-modal').classList.remove('hidden');
+});
+document.getElementById('vision-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) document.getElementById('vision-modal').classList.add('hidden');
+});
+document.getElementById('vision-img').addEventListener('click', () => {
+  document.getElementById('vision-modal').classList.add('hidden');
+});
 
 // ── SERVICE WORKER ────────────────────────────────────────────────
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
