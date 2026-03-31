@@ -354,15 +354,15 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── PIN NAME BUTTONS ── */
-    .pin-names { display: flex; gap: 8px; margin-top: 20px; width: 100%; max-width: 252px; }
+    .pin-names { display: flex; gap: 10px; margin-top: 28px; width: 100%; max-width: 320px; }
     .pin-name-btn {
-      flex: 1; background: rgba(255,255,255,.12); backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,.18); border-radius: 14px;
-      color: #fff; font-size: 12px; font-weight: 700; height: 44px;
+      flex: 1; background: rgba(255,255,255,.15); backdrop-filter: blur(10px);
+      border: 1.5px solid rgba(255,255,255,.25); border-radius: 18px;
+      color: #fff; font-size: 16px; font-weight: 800; height: 64px;
       cursor: pointer; -webkit-user-select: none; user-select: none;
       transition: background .12s, transform .08s;
     }
-    .pin-name-btn:active { background: rgba(255,255,255,.28); transform: scale(.95); }
+    .pin-name-btn:active { background: rgba(255,255,255,.35); transform: scale(.95); }
     /* ── USER BADGE ── */
     .user-badge { background: rgba(255,255,255,.15); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.2); border-radius: 100px; padding: 5px 12px; color: #fff; font-size: 12px; font-weight: 700; }
     /* ── ACTIVITY LOG ── */
@@ -1595,7 +1595,6 @@ function renderNotes() {
 
 function openNoteModal() {
   document.getElementById('note-textarea').value = '';
-  document.getElementById('note-author-picker').querySelectorAll('.author-chip').forEach(c => c.classList.remove('sel'));
   document.getElementById('note-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('note-textarea').focus(), 50);
 }
