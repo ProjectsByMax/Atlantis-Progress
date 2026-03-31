@@ -166,10 +166,11 @@
     .hstep-sm .hstep-node { width: 26px; height: 26px; font-size: 10px; }
     /* ── SCROLL WRAPPER (5+ steps) ── */
     .hstep-wrap { position: relative; }
-    .hstep-wrap .hstep { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .hstep-wrap .hstep { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; min-height: 72px; }
     .hstep-wrap .hstep::-webkit-scrollbar { display: none; }
-    .hstep-wrap .hstep-col  { flex-shrink: 0; }
-    .hstep-wrap .hstep-conn { flex: none; width: 16px; min-width: 16px; }
+    .hstep-wrap .hstep-col  { flex-shrink: 0; width: 56px; }
+    .hstep-wrap .hstep-lbl  { display: block; width: 56px; font-size: 9px; }
+    .hstep-wrap .hstep-conn { flex: none; width: 12px; min-width: 12px; }
     .hstep-wrap .bridge-wrap { flex: none; width: 28px; min-width: 28px; }
     .hstep-wrap::after {
       content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 36px;
@@ -908,7 +909,7 @@ function renderItem(item) {
         </span>
       </div>
       ${item.steps.length >= 5
-        ? `<div class="hstep-wrap"><div class="hstep hstep-sm" data-scroll-id="${item.id}">${nodesHTML}</div></div>`
+        ? `<div class="hstep-wrap"><div class="hstep" data-scroll-id="${item.id}">${nodesHTML}</div></div>`
         : `<div class="hstep">${nodesHTML}</div>`}
     </div>`;
 }
