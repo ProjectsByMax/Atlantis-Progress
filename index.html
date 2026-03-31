@@ -352,6 +352,30 @@
     .uspinner { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--border); border-top-color: var(--blue); animation: spin .7s linear infinite; margin: 0 auto 12px; }
     .ucard p { font-size: 14px; font-weight: 700; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── PIN NAME BUTTONS ── */
+    .pin-names { display: flex; gap: 8px; margin-top: 20px; width: 100%; max-width: 252px; }
+    .pin-name-btn {
+      flex: 1; background: rgba(255,255,255,.12); backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,.18); border-radius: 14px;
+      color: #fff; font-size: 12px; font-weight: 700; height: 44px;
+      cursor: pointer; -webkit-user-select: none; user-select: none;
+      transition: background .12s, transform .08s;
+    }
+    .pin-name-btn:active { background: rgba(255,255,255,.28); transform: scale(.95); }
+    /* ── USER BADGE ── */
+    .user-badge { background: rgba(255,255,255,.15); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.2); border-radius: 100px; padding: 5px 12px; color: #fff; font-size: 12px; font-weight: 700; }
+    /* ── ACTIVITY LOG ── */
+    .log-entry { background: var(--card); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(59,130,246,.07), 0 2px 8px rgba(59,130,246,.04); }
+    .log-who { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+    .log-who[data-u="Cyril"]    { color: #1D4ED8; }
+    .log-who[data-u="Gaby"]     { color: #BE185D; }
+    .log-who[data-u="Marshall"] { color: #047857; }
+    .log-who[data-u="Max"]      { color: #B45309; }
+    .log-action { font-size: 13px; color: var(--text); line-height: 1.4; }
+    .log-time { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .log-empty { text-align: center; color: var(--muted); font-size: 14px; margin-top: 48px; line-height: 1.6; }
+    .log-empty div { font-size: 32px; margin-bottom: 12px; }
   </style>
 </head>
 <body>
@@ -372,6 +396,12 @@
     <button class="pin-key blank"></button><button class="pin-key" data-k="0">0</button><button class="pin-key del" data-k="⌫">⌫</button>
   </div>
   <div class="pin-error" id="pin-err"></div>
+  <div class="pin-names">
+    <button class="pin-name-btn" data-user="Cyril">Cyril</button>
+    <button class="pin-name-btn" data-user="Gaby">Gaby</button>
+    <button class="pin-name-btn" data-user="Marshall">Marshall</button>
+    <button class="pin-name-btn" data-user="Max">Max</button>
+  </div>
 </div>
 
 <div id="app" class="hidden">
@@ -382,6 +412,7 @@
         <div class="header-sub">Storage Facility Development</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
+        <div class="user-badge" id="user-badge"></div>
         <div class="pct-badge" id="pct-badge">0%</div>
         <button class="logout-btn" id="logout-btn" title="Log out">
           <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -446,6 +477,7 @@
     <div class="tab-pane hidden" id="tab-info"></div>
     <div class="tab-pane hidden" id="tab-files"></div>
     <div class="tab-pane hidden" id="tab-notes"></div>
+    <div class="tab-pane hidden" id="tab-log"></div>
   </div>
 
   <nav class="bot-nav">
@@ -464,6 +496,10 @@
     <button class="nav-btn" data-tab="notes">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       Notes
+    </button>
+    <button class="nav-btn" data-tab="log">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Log
     </button>
   </nav>
 </div>
@@ -501,12 +537,6 @@
   <div class="modal-card">
     <div class="modal-title">New Note</div>
     <textarea class="note-textarea" id="note-textarea" placeholder="Write a note…" maxlength="2000"></textarea>
-    <div class="author-picker" id="note-author-picker">
-      <div class="author-chip" data-author="Cyril">Cyril</div>
-      <div class="author-chip" data-author="Gaby">Gaby</div>
-      <div class="author-chip" data-author="Marshall">Marshall</div>
-      <div class="author-chip" data-author="Max">Max</div>
-    </div>
     <div class="modal-btns">
       <button class="modal-btn cancel" id="note-cancel">Cancel</button>
       <button class="modal-btn save" id="note-save">Save Note</button>
@@ -657,6 +687,7 @@ let stepStates    = {};
 let attachments   = [];
 let activeTab     = 'progress';
 let uploadSection = null;
+let activityLog   = [];
 // Mutable state (localStorage-backed), migrates legacy ap_custom
 const _legacy     = JSON.parse(localStorage.getItem('ap_custom') || '[]');
 const _savedSec   = localStorage.getItem('ap_sections');
@@ -685,6 +716,9 @@ function persistCustomSteps() {
 let addModalSection = null;
 let collapsedSections = new Set();
 
+// ── USER ──────────────────────────────────────────────────────────
+let currentUser = localStorage.getItem('ap_user') || '';
+
 // ── PIN ───────────────────────────────────────────────────────────
 let pinEntry = '';
 document.querySelectorAll('.pin-key').forEach(k => k.addEventListener('click', () => onKey(k.dataset.k)));
@@ -701,7 +735,6 @@ function onKey(k) {
   if (k === '⌫') pinEntry = pinEntry.slice(0,-1);
   else if (pinEntry.length < 5) pinEntry += k;
   syncDots();
-  if (pinEntry.length === 5) setTimeout(checkPin, 130);
 }
 function syncDots(err=false) {
   for (let i=0;i<5;i++) {
@@ -710,22 +743,32 @@ function syncDots(err=false) {
     d.classList.toggle('error',  err);
   }
 }
-function checkPin() {
-  if (pinEntry === PIN) { localStorage.setItem('ap_auth', Date.now()); openApp(); }
-  else {
-    syncDots(true);
-    document.getElementById('pin-err').textContent = 'Incorrect PIN';
-    document.getElementById('keypad').classList.add('shake');
-    setTimeout(() => {
-      document.getElementById('keypad').classList.remove('shake');
-      document.getElementById('pin-err').textContent = '';
-      pinEntry = ''; syncDots();
-    }, 1000);
-  }
+function pinError() {
+  syncDots(true);
+  document.getElementById('pin-err').textContent = 'Incorrect PIN';
+  document.getElementById('keypad').classList.add('shake');
+  setTimeout(() => {
+    document.getElementById('keypad').classList.remove('shake');
+    document.getElementById('pin-err').textContent = '';
+    pinEntry = ''; syncDots();
+  }, 1000);
 }
+document.querySelectorAll('.pin-name-btn').forEach(btn =>
+  btn.addEventListener('click', () => {
+    if (pinEntry === PIN) {
+      currentUser = btn.dataset.user;
+      localStorage.setItem('ap_user', currentUser);
+      localStorage.setItem('ap_auth', Date.now());
+      openApp();
+    } else {
+      pinError();
+    }
+  })
+);
 function openApp() {
   document.getElementById('pin-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
+  document.getElementById('user-badge').textContent = currentUser;
 }
 if (localStorage.getItem('ap_auth') && Date.now() - +localStorage.getItem('ap_auth') < 86400000) openApp();
 
@@ -745,6 +788,11 @@ if (db && FIREBASE_CONFIG.apiKey !== 'REPLACE_WITH_YOUR_API_KEY') {
   onSnapshot(collection(db,'notes'), snap => {
     notes = snap.docs.map(d => d.data());
     renderNotes();
+  });
+  onSnapshot(collection(db,'activity'), snap => {
+    activityLog = snap.docs.map(d => ({id:d.id, ...d.data()}))
+      .sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0));
+    renderLog();
   });
   const layoutRef = doc(db,'config','layout');
   onSnapshot(layoutRef, snap => {
@@ -772,6 +820,8 @@ document.getElementById('header-title').addEventListener('click', () => switchTa
 document.getElementById('logout-btn').addEventListener('click', () => {
   if (!confirm('Log out?')) return;
   localStorage.removeItem('ap_auth');
+  localStorage.removeItem('ap_user');
+  currentUser = '';
   document.getElementById('app').classList.add('hidden');
   document.getElementById('pin-screen').classList.remove('hidden');
   pinEntry = ''; syncDots();
@@ -932,6 +982,16 @@ async function toggleStep(itemId, si, completed) {
   try {
     await setDoc(doc(db,'steps', skey(itemId,si)), { completed, completedAt: completed ? serverTimestamp() : null });
     showToast(completed ? '✓ Step complete' : 'Step unchecked');
+    const item = allItems().find(i => i.id === itemId);
+    const sec  = activeSections.find(s => s.id === item?.section);
+    await setDoc(doc(db,'activity',`act_${Date.now()}_${Math.random().toString(36).slice(2,6)}`), {
+      user: currentUser || 'Unknown',
+      action: completed ? 'completed' : 'unchecked',
+      stepName: item?.steps[si] || `Step ${si+1}`,
+      itemName: item?.name || itemId,
+      sectionName: sec?.name || '',
+      timestamp: serverTimestamp(),
+    });
   } catch(e) { console.error(e); showToast('Error — try again'); }
 }
 
@@ -1477,12 +1537,6 @@ function renderNotes() {
           ${repliesHtml}
           <div class="reply-form hidden" id="rform_${n.id}">
             <textarea class="reply-textarea" placeholder="Write a reply…" maxlength="1000"></textarea>
-            <div class="author-picker reply-author-picker">
-              <div class="author-chip" data-author="Cyril">Cyril</div>
-              <div class="author-chip" data-author="Gaby">Gaby</div>
-              <div class="author-chip" data-author="Marshall">Marshall</div>
-              <div class="author-chip" data-author="Max">Max</div>
-            </div>
             <div class="reply-form-btns">
               <button class="reply-form-btn cancel" data-rcancel="${n.id}">Cancel</button>
               <button class="reply-form-btn save"   data-rsave="${n.id}">Reply</button>
@@ -1519,22 +1573,14 @@ function renderNotes() {
   el.querySelectorAll('[data-rcancel]').forEach(btn =>
     btn.addEventListener('click', () => document.getElementById(`rform_${btn.dataset.rcancel}`).classList.add('hidden'))
   );
-  el.querySelectorAll('.reply-author-picker .author-chip').forEach(chip =>
-    chip.addEventListener('click', () => {
-      chip.closest('.author-picker').querySelectorAll('.author-chip').forEach(c => c.classList.remove('sel'));
-      chip.classList.add('sel');
-    })
-  );
   el.querySelectorAll('[data-rsave]').forEach(btn =>
     btn.addEventListener('click', async () => {
       const noteId = btn.dataset.rsave;
       const form   = document.getElementById(`rform_${noteId}`);
       const text   = form.querySelector('.reply-textarea').value.trim();
-      const author = form.querySelector('.author-chip.sel')?.dataset.author;
-      if (!text)   { showToast('Write something first'); return; }
-      if (!author) { showToast('Select your name'); return; }
+      if (!text) { showToast('Write something first'); return; }
       form.classList.add('hidden');
-      await dbAddReply(noteId, text, author);
+      await dbAddReply(noteId, text, currentUser || 'Unknown');
     })
   );
   el.querySelectorAll('.reply-textarea').forEach(ta =>
@@ -1557,20 +1603,12 @@ function closeNoteModal() {
   document.getElementById('note-modal').classList.add('hidden');
 }
 async function saveNote() {
-  const text   = document.getElementById('note-textarea').value.trim();
-  const author = document.getElementById('note-author-picker').querySelector('.author-chip.sel')?.dataset.author;
-  if (!text)   { showToast('Write something first'); return; }
-  if (!author) { showToast('Select your name'); return; }
+  const text = document.getElementById('note-textarea').value.trim();
+  if (!text) { showToast('Write something first'); return; }
   closeNoteModal();
-  await dbAddNote(text, author);
+  await dbAddNote(text, currentUser || 'Unknown');
   showToast('Note saved');
 }
-document.getElementById('note-author-picker').querySelectorAll('.author-chip').forEach(chip =>
-  chip.addEventListener('click', () => {
-    document.getElementById('note-author-picker').querySelectorAll('.author-chip').forEach(c => c.classList.remove('sel'));
-    chip.classList.add('sel');
-  })
-);
 document.getElementById('note-cancel').addEventListener('click', closeNoteModal);
 document.getElementById('note-save').addEventListener('click', saveNote);
 document.getElementById('note-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeNoteModal(); });
@@ -1578,6 +1616,27 @@ document.getElementById('note-textarea').addEventListener('keydown', e => {
   if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') saveNote();
   if (e.key === 'Escape') closeNoteModal();
 });
+
+// ── RENDER: LOG ──────────────────────────────────────────────────
+function renderLog() {
+  const el = document.getElementById('tab-log');
+  if (!el) return;
+  if (!activityLog.length) {
+    el.innerHTML = `<div class="log-empty"><div>🕐</div>No activity yet.<br>Steps completed will appear here.</div>`;
+    return;
+  }
+  el.innerHTML = activityLog.map(entry => {
+    const ts = entry.timestamp?.seconds
+      ? new Date(entry.timestamp.seconds * 1000).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })
+      : '';
+    const verb = entry.action === 'completed' ? 'completed' : 'unchecked';
+    return `<div class="log-entry">
+      <div class="log-who" data-u="${entry.user||''}">${entry.user||'Unknown'}</div>
+      <div class="log-action">${verb} <strong>${entry.stepName}</strong> on ${entry.itemName} <span style="color:var(--muted);font-size:12px">(${entry.sectionName})</span></div>
+      <div class="log-time">${ts}</div>
+    </div>`;
+  }).join('');
+}
 
 // ── TOAST ─────────────────────────────────────────────────────────
 let toastTimer;
@@ -1605,6 +1664,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').ca
 // Initial render
 renderProgress();
 renderFiles();
+renderLog();
 renderNotes();
 
 </script>
