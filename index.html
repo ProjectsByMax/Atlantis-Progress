@@ -164,13 +164,19 @@
     .hstep-sm .hstep-lbl  { display: none; }
     .hstep-sm .hstep-col  { width: 32px; }
     .hstep-sm .hstep-node { width: 26px; height: 26px; font-size: 10px; }
-    .hstep-xs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .hstep-xs .hstep-lbl  { display: none; }
-    .hstep-xs .hstep-col  { width: 24px; }
-    .hstep-xs .hstep-node { width: 20px; height: 20px; font-size: 8px; }
-    .hstep-xs .hstep-conn { margin-top: 13px; min-width: 3px; }
-    .hstep-xs .bridge-wrap { min-width: 14px; }
-    .hstep-xs .bridge-svg  { height: 18px; }
+    /* ── SCROLL WRAPPER (5+ steps) ── */
+    .hstep-wrap { position: relative; }
+    .hstep-wrap .hstep { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .hstep-wrap .hstep::-webkit-scrollbar { display: none; }
+    .hstep-wrap .hstep-col  { flex-shrink: 0; }
+    .hstep-wrap .hstep-conn { flex: none; width: 16px; min-width: 16px; }
+    .hstep-wrap .bridge-wrap { flex: none; width: 28px; min-width: 28px; }
+    .hstep-wrap::after {
+      content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 36px;
+      background: linear-gradient(to right, transparent, var(--card));
+      pointer-events: none; opacity: 0; transition: opacity .2s;
+    }
+    .hstep-wrap.show-fade::after { opacity: 1; }
     .hstep-conn { flex: 1; height: 2px; background: var(--border); margin-top: 17px; border-radius: 2px; transition: background .3s; min-width: 4px; }
     .hstep-conn.done { background: var(--green); }
     /* ── BRIDGE SVG ── */
@@ -849,6 +855,17 @@ function renderProgress() {
       }
     })
   );
+  // Set up scroll-fade on hstep-wrap elements
+  el.querySelectorAll('.hstep-wrap').forEach(wrap => {
+    const scroller = wrap.querySelector('.hstep');
+    const update = () => {
+      const atEnd = scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - 4;
+      wrap.classList.toggle('show-fade', !atEnd && scroller.scrollWidth > scroller.clientWidth);
+    };
+    scroller.addEventListener('scroll', update, { passive: true });
+    // Use timeout to let layout settle before measuring
+    setTimeout(update, 0);
+  });
 }
 
 function renderItem(item) {
@@ -890,7 +907,9 @@ function renderItem(item) {
           <button class="item-gear-btn" data-gear-item="${item.id}">${gearSVG}</button>
         </span>
       </div>
-      <div class="hstep${item.steps.length >= 8 ? ' hstep-xs' : item.steps.length >= 5 ? ' hstep-sm' : ''}">${nodesHTML}</div>
+      ${item.steps.length >= 5
+        ? `<div class="hstep-wrap"><div class="hstep hstep-sm" data-scroll-id="${item.id}">${nodesHTML}</div></div>`
+        : `<div class="hstep">${nodesHTML}</div>`}
     </div>`;
 }
 
