@@ -353,12 +353,16 @@
     .ucard p { font-size: 14px; font-weight: 700; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── PIN NAME BUTTONS ── */
-    .pin-names { display: flex; gap: 10px; margin-top: 28px; width: 100%; max-width: 420px; }
+    /* ── PIN USER PICKER ── */
+    #pin-entry { display: flex; flex-direction: column; align-items: center; }
+    #pin-user  { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 340px; }
+    #pin-user.visible { display: flex; }
+    .pin-who   { color: #fff; font-size: 22px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 32px; }
+    .pin-names { display: flex; flex-direction: column; gap: 12px; width: 100%; }
     .pin-name-btn {
-      flex: 1; background: rgba(255,255,255,.15); backdrop-filter: blur(10px);
+      width: 100%; background: rgba(255,255,255,.15); backdrop-filter: blur(10px);
       border: 1.5px solid rgba(255,255,255,.25); border-radius: 18px;
-      color: #fff; font-size: 16px; font-weight: 800; height: 64px;
+      color: #fff; font-size: 20px; font-weight: 800; height: 68px;
       cursor: pointer; -webkit-user-select: none; user-select: none;
       transition: background .12s, transform .08s;
     }
@@ -384,23 +388,30 @@
   <div class="pin-icon">🏗️</div>
   <div class="pin-title">Mizner Storall of Atlantis</div>
   <div class="pin-sub">Storage Facility Development</div>
-  <div class="pin-dots">
-    <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
-    <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
-    <div class="pin-dot" id="d4"></div>
+
+  <div id="pin-entry">
+    <div class="pin-dots">
+      <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+      <div class="pin-dot" id="d4"></div>
+    </div>
+    <div class="pin-keypad" id="keypad">
+      <button class="pin-key" data-k="1">1</button><button class="pin-key" data-k="2">2</button><button class="pin-key" data-k="3">3</button>
+      <button class="pin-key" data-k="4">4</button><button class="pin-key" data-k="5">5</button><button class="pin-key" data-k="6">6</button>
+      <button class="pin-key" data-k="7">7</button><button class="pin-key" data-k="8">8</button><button class="pin-key" data-k="9">9</button>
+      <button class="pin-key blank"></button><button class="pin-key" data-k="0">0</button><button class="pin-key del" data-k="⌫">⌫</button>
+    </div>
+    <div class="pin-error" id="pin-err"></div>
   </div>
-  <div class="pin-keypad" id="keypad">
-    <button class="pin-key" data-k="1">1</button><button class="pin-key" data-k="2">2</button><button class="pin-key" data-k="3">3</button>
-    <button class="pin-key" data-k="4">4</button><button class="pin-key" data-k="5">5</button><button class="pin-key" data-k="6">6</button>
-    <button class="pin-key" data-k="7">7</button><button class="pin-key" data-k="8">8</button><button class="pin-key" data-k="9">9</button>
-    <button class="pin-key blank"></button><button class="pin-key" data-k="0">0</button><button class="pin-key del" data-k="⌫">⌫</button>
-  </div>
-  <div class="pin-error" id="pin-err"></div>
-  <div class="pin-names">
-    <button class="pin-name-btn" data-user="Cyril">Cyril</button>
-    <button class="pin-name-btn" data-user="Gaby">Gaby</button>
-    <button class="pin-name-btn" data-user="Marshall">Marshall</button>
-    <button class="pin-name-btn" data-user="Max">Max</button>
+
+  <div id="pin-user">
+    <div class="pin-who">Who are you?</div>
+    <div class="pin-names">
+      <button class="pin-name-btn" data-user="Cyril">Cyril</button>
+      <button class="pin-name-btn" data-user="Gaby">Gaby</button>
+      <button class="pin-name-btn" data-user="Marshall">Marshall</button>
+      <button class="pin-name-btn" data-user="Max">Max</button>
+    </div>
   </div>
 </div>
 
@@ -735,6 +746,7 @@ function onKey(k) {
   if (k === '⌫') pinEntry = pinEntry.slice(0,-1);
   else if (pinEntry.length < 5) pinEntry += k;
   syncDots();
+  if (pinEntry.length === 5) setTimeout(checkPin, 130);
 }
 function syncDots(err=false) {
   for (let i=0;i<5;i++) {
@@ -743,26 +755,27 @@ function syncDots(err=false) {
     d.classList.toggle('error',  err);
   }
 }
-function pinError() {
-  syncDots(true);
-  document.getElementById('pin-err').textContent = 'Incorrect PIN';
-  document.getElementById('keypad').classList.add('shake');
-  setTimeout(() => {
-    document.getElementById('keypad').classList.remove('shake');
-    document.getElementById('pin-err').textContent = '';
-    pinEntry = ''; syncDots();
-  }, 1000);
+function checkPin() {
+  if (pinEntry === PIN) {
+    document.getElementById('pin-entry').style.display = 'none';
+    document.getElementById('pin-user').classList.add('visible');
+  } else {
+    syncDots(true);
+    document.getElementById('pin-err').textContent = 'Incorrect PIN';
+    document.getElementById('keypad').classList.add('shake');
+    setTimeout(() => {
+      document.getElementById('keypad').classList.remove('shake');
+      document.getElementById('pin-err').textContent = '';
+      pinEntry = ''; syncDots();
+    }, 1000);
+  }
 }
 document.querySelectorAll('.pin-name-btn').forEach(btn =>
   btn.addEventListener('click', () => {
-    if (pinEntry === PIN) {
-      currentUser = btn.dataset.user;
-      localStorage.setItem('ap_user', currentUser);
-      localStorage.setItem('ap_auth', Date.now());
-      openApp();
-    } else {
-      pinError();
-    }
+    currentUser = btn.dataset.user;
+    localStorage.setItem('ap_user', currentUser);
+    localStorage.setItem('ap_auth', Date.now());
+    openApp();
   })
 );
 function openApp() {
@@ -824,6 +837,8 @@ document.getElementById('logout-btn').addEventListener('click', () => {
   currentUser = '';
   document.getElementById('app').classList.add('hidden');
   document.getElementById('pin-screen').classList.remove('hidden');
+  document.getElementById('pin-entry').style.display = '';
+  document.getElementById('pin-user').classList.remove('visible');
   pinEntry = ''; syncDots();
 });
 
