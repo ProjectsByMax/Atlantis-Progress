@@ -514,6 +514,18 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="rename-modal">
+  <div class="modal-card">
+    <div class="modal-title">Name this file</div>
+    <div class="modal-sub" id="rename-ext-hint"></div>
+    <input class="modal-input" id="rename-input" type="text" maxlength="120">
+    <div class="modal-btns">
+      <button class="modal-btn cancel" id="rename-cancel">Cancel</button>
+      <button class="modal-btn save" id="rename-upload">Upload</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="del-modal">
   <div class="modal-card">
     <div class="modal-title">Delete item?</div>
@@ -924,26 +936,71 @@ async function toggleStep(itemId, si, completed) {
 }
 
 // ── FILE UPLOAD ───────────────────────────────────────────────────
-document.getElementById('file-input').addEventListener('change', async e => {
-  const files = Array.from(e.target.files);
-  if (!files.length || !uploadSection) return;
+let pendingFiles = [], pendingSection = null;
+
+function getExt(name) { const m = name.match(/(\.[^.]+)$/); return m ? m[1] : ''; }
+function stripExt(name) { return name.replace(/(\.[^.]+)$/, ''); }
+
+function promptRename(files, secId) {
+  pendingFiles   = files;
+  pendingSection = secId;
+  showNextRename();
+}
+
+function showNextRename() {
+  if (!pendingFiles.length) return;
+  const f   = pendingFiles[0];
+  const ext = getExt(f.name);
+  document.getElementById('rename-ext-hint').textContent = ext ? `File extension: ${ext}` : '';
+  const inp = document.getElementById('rename-input');
+  inp.value = stripExt(f.name);
+  document.getElementById('rename-modal').classList.remove('hidden');
+  setTimeout(() => { inp.focus(); inp.select(); }, 80);
+}
+
+document.getElementById('rename-cancel').addEventListener('click', () => {
+  document.getElementById('rename-modal').classList.add('hidden');
+  pendingFiles = []; pendingSection = null;
+  document.getElementById('file-input').value = '';
+});
+
+document.getElementById('rename-upload').addEventListener('click', () => doRename());
+document.getElementById('rename-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doRename();
+});
+
+async function doRename() {
+  const f    = pendingFiles.shift();
+  const ext  = getExt(f.name);
+  const name = (document.getElementById('rename-input').value.trim() || stripExt(f.name)) + ext;
+  document.getElementById('rename-modal').classList.add('hidden');
+
   const ov = Object.assign(document.createElement('div'), { className:'uov' });
   ov.innerHTML = `<div class="ucard"><div class="uspinner"></div><p>Uploading…</p></div>`;
   document.body.appendChild(ov);
-  for (const f of files) await uploadFile(f, uploadSection);
-  ov.remove(); e.target.value = '';
+  await uploadFile(f, pendingSection, name);
+  ov.remove();
+
+  if (pendingFiles.length) showNextRename();
+  else { pendingSection = null; document.getElementById('file-input').value = ''; }
+}
+
+document.getElementById('file-input').addEventListener('change', e => {
+  const files = Array.from(e.target.files);
+  if (!files.length || !uploadSection) return;
+  promptRename(files, uploadSection);
 });
 
 const firebaseReady = () => FIREBASE_CONFIG.apiKey !== 'REPLACE_WITH_YOUR_API_KEY' && db && storage;
 
-async function uploadFile(file, secId) {
-  const ts = Date.now();
+async function uploadFile(file, secId, customName) {
+  const ts       = Date.now();
+  const fileName = customName || file.name;
   if (!firebaseReady()) {
-    // Local fallback — blob URL, lives for the session
     const url = URL.createObjectURL(file);
     attachments.unshift({
       id: `local_${secId}_${ts}`, section: secId,
-      fileName: file.name, fileUrl: url, fileType: file.type,
+      fileName, fileUrl: url, fileType: file.type,
       storagePath: '', uploadedAt: { seconds: Math.floor(ts/1000) },
       size: file.size, local: true,
     });
@@ -952,12 +1009,12 @@ async function uploadFile(file, secId) {
     return;
   }
   try {
-    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const safe = fileName.replace(/[^a-zA-Z0-9._-]/g,'_');
     const sRef = ref(storage, `attachments/${secId}/${ts}_${safe}`);
     const snap = await uploadBytes(sRef, file);
     const url  = await getDownloadURL(snap.ref);
     await setDoc(doc(db,'attachments',`${secId}_${ts}`), {
-      section:secId, fileName:file.name, fileUrl:url, fileType:file.type,
+      section:secId, fileName, fileUrl:url, fileType:file.type,
       storagePath:snap.ref.fullPath, uploadedAt:serverTimestamp(), size:file.size,
     });
     showToast('✓ File attached');
