@@ -381,7 +381,7 @@
     .log-empty { text-align: center; color: var(--muted); font-size: 14px; margin-top: 48px; line-height: 1.6; }
     .log-empty div { font-size: 32px; margin-bottom: 12px; }
     /* ── DEADLINES ── */
-    .step-date { font-size: 9px; font-weight: 600; color: var(--muted); margin-top: 2px; text-align: center; white-space: nowrap; }
+    .step-date { font-size: 9px; font-weight: 600; color: var(--red); margin-top: 2px; text-align: center; white-space: nowrap; }
     .step-date.overdue { color: var(--red); }
     .hstep-node.overdue-ring { box-shadow: 0 0 0 2px var(--red); }
     .item-clock-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px 4px; border-radius: 6px; display: flex; align-items: center; transition: color .15s; }
@@ -1554,6 +1554,8 @@ function openDeadlineModal(itemId) {
       const existing = stepDeadlines[skey(dlItemId, dlStepIdx)];
       document.getElementById('dl-date-input').value = existing || '';
       document.getElementById('dl-remove').classList.toggle('hidden', !existing);
+      const inp = document.getElementById('dl-date-input');
+      setTimeout(() => { try { inp.showPicker(); } catch(e) { inp.focus(); } }, 80);
     })
   );
 
