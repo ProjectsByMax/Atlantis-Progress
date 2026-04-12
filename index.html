@@ -380,6 +380,28 @@
     .log-time { font-size: 11px; color: var(--muted); margin-top: 4px; }
     .log-empty { text-align: center; color: var(--muted); font-size: 14px; margin-top: 48px; line-height: 1.6; }
     .log-empty div { font-size: 32px; margin-bottom: 12px; }
+    /* ── DEADLINES ── */
+    .step-date { font-size: 9px; font-weight: 600; color: var(--muted); margin-top: 2px; text-align: center; white-space: nowrap; }
+    .step-date.overdue { color: var(--red); }
+    .hstep-node.overdue-ring { box-shadow: 0 0 0 2px var(--red); }
+    .item-clock-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px 4px; border-radius: 6px; display: flex; align-items: center; transition: color .15s; }
+    .item-clock-btn:active { color: var(--blue); }
+    .item-clock-btn svg { width: 13px; height: 13px; stroke: currentColor; stroke-width: 2; fill: none; }
+    .item-clock-btn.has-deadline { color: var(--blue); }
+    /* deadline modal step list */
+    .dl-step-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; max-height: 200px; overflow-y: auto; }
+    .dl-step-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 11px; border: 1.5px solid var(--border); background: var(--soft); cursor: pointer; transition: all .15s; -webkit-user-select: none; user-select: none; }
+    .dl-step-row.sel { border-color: var(--blue); background: var(--blue-tint); }
+    .dl-step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: var(--muted); flex-shrink: 0; }
+    .dl-step-row.sel .dl-step-num { background: var(--blue); color: #fff; }
+    .dl-step-name { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+    .dl-step-existing { font-size: 11px; font-weight: 600; color: var(--blue); margin-left: auto; flex-shrink: 0; }
+    .dl-date-wrap { margin-bottom: 14px; }
+    .dl-date-label { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .dl-date-input { width: 100%; border: 1.5px solid var(--border); border-radius: 12px; padding: 11px 14px; font-size: 15px; font-family: inherit; color: var(--text); outline: none; transition: border-color .15s; }
+    .dl-date-input:focus { border-color: var(--blue); }
+    .dl-remove-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; background: rgba(239,68,68,.1); color: var(--red); transition: opacity .15s; }
+    .dl-remove-btn:active { opacity: .75; }
   </style>
 </head>
 <body>
@@ -567,6 +589,23 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="dl-modal">
+  <div class="modal-card">
+    <div class="modal-title">Set Deadline</div>
+    <div class="modal-sub">Choose a step and pick a date</div>
+    <div class="dl-step-list" id="dl-step-list"></div>
+    <div class="dl-date-wrap">
+      <div class="dl-date-label">Date</div>
+      <input class="dl-date-input" id="dl-date-input" type="date">
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" id="dl-cancel">Cancel</button>
+      <button class="dl-remove-btn hidden" id="dl-remove">Remove</button>
+      <button class="modal-btn save" id="dl-save">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="del-modal">
   <div class="modal-card">
     <div class="modal-title">Delete item?</div>
@@ -699,6 +738,7 @@ let attachments   = [];
 let activeTab     = 'progress';
 let uploadSection = null;
 let activityLog   = [];
+let stepDeadlines = JSON.parse(localStorage.getItem('ap_deadlines') || '{}');
 // Mutable state (localStorage-backed), migrates legacy ap_custom
 const _legacy     = JSON.parse(localStorage.getItem('ap_custom') || '[]');
 const _savedSec   = localStorage.getItem('ap_sections');
@@ -722,6 +762,12 @@ function persistCustomSteps() {
   localStorage.setItem('ap_custom_steps', JSON.stringify(customSteps));
   if (db && FIREBASE_CONFIG.apiKey !== 'REPLACE_WITH_YOUR_API_KEY') {
     updateDoc(doc(db,'config','layout'), { customSteps });
+  }
+}
+function persistDeadlines() {
+  localStorage.setItem('ap_deadlines', JSON.stringify(stepDeadlines));
+  if (db && FIREBASE_CONFIG.apiKey !== 'REPLACE_WITH_YOUR_API_KEY') {
+    updateDoc(doc(db,'config','layout'), { stepDeadlines });
   }
 }
 let addModalSection = null;
@@ -811,12 +857,14 @@ if (db && FIREBASE_CONFIG.apiKey !== 'REPLACE_WITH_YOUR_API_KEY') {
   onSnapshot(layoutRef, snap => {
     if (snap.exists()) {
       const data = snap.data();
-      activeSections = data.sections   || activeSections;
-      activeItems    = data.items      || activeItems;
-      customSteps    = data.customSteps || customSteps;
+      activeSections = data.sections     || activeSections;
+      activeItems    = data.items        || activeItems;
+      customSteps    = data.customSteps  || customSteps;
+      stepDeadlines  = data.stepDeadlines || stepDeadlines;
       localStorage.setItem('ap_sections',    JSON.stringify(activeSections));
       localStorage.setItem('ap_items',       JSON.stringify(activeItems));
       localStorage.setItem('ap_custom_steps', JSON.stringify(customSteps));
+      localStorage.setItem('ap_deadlines',   JSON.stringify(stepDeadlines));
       renderProgress(); renderFiles();
     } else {
       // First run — push defaults up to Firestore
@@ -912,6 +960,9 @@ function renderProgress() {
       renderProgress();
     })
   );
+  el.querySelectorAll('.item-clock-btn').forEach(btn =>
+    btn.addEventListener('click', () => openDeadlineModal(btn.dataset.clockItem))
+  );
   el.querySelectorAll('.item-gear-btn').forEach(btn =>
     btn.addEventListener('click', () => openGearModal(btn.dataset.gearItem))
   );
@@ -969,19 +1020,28 @@ function renderItem(item) {
     const active  = !done && prev;
     const cls     = done ? 'done' : active ? 'active' : 'locked';
     const content = done ? `<svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>` : si + 1;
+    const dlKey   = skey(item.id, si);
+    const dlDate  = !done && stepDeadlines[dlKey] ? stepDeadlines[dlKey] : null;
+    const today   = new Date().toISOString().slice(0,10);
+    const overdue = dlDate && dlDate < today;
+    const dlLabel = dlDate ? new Date(dlDate + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
 
     return `${conn}<div class="hstep-col">
-      <div class="hstep-node ${cls}" data-item="${item.id}" data-step="${si}" data-state="${cls}">${content}</div>
+      <div class="hstep-node ${cls}${overdue?' overdue-ring':''}" data-item="${item.id}" data-step="${si}" data-state="${cls}">${content}</div>
       <div class="hstep-lbl">${label}</div>
+      ${dlLabel ? `<div class="step-date${overdue?' overdue':''}">${dlLabel}</div>` : ''}
     </div>`;
   }).join('');
 
-  const gearSVG = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`;
+  const gearSVG  = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`;
+  const clockSVG = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+  const hasAnyDeadline = item.steps.slice(0,-1).some((_,si) => stepDeadlines[skey(item.id,si)]);
   return `
     <div class="item-row${complete?' complete':''}">
       <div class="item-name ${complete?'done':''}">
         ${complete ? '<span class="item-check">✓</span>' : ''}<span>${item.name}</span>
         <span class="item-actions">
+          <button class="item-clock-btn${hasAnyDeadline?' has-deadline':''}" data-clock-item="${item.id}">${clockSVG}</button>
           <button class="item-gear-btn" data-gear-item="${item.id}">${gearSVG}</button>
         </span>
       </div>
@@ -1461,6 +1521,77 @@ document.getElementById('gear-modal').addEventListener('click', e => {
 });
 document.getElementById('gear-step-search').addEventListener('input', e => { gearSearchQuery = e.target.value; renderGearChips(); });
 document.getElementById('add-step-search').addEventListener('input', e => { addSearchQuery = e.target.value; renderChipPool(); });
+
+// ── DEADLINE MODAL ───────────────────────────────────────────────────────────────
+let dlItemId = null;
+let dlStepIdx = null;
+
+function openDeadlineModal(itemId) {
+  dlItemId  = itemId;
+  dlStepIdx = null;
+  const item = allItems().find(i => i.id === itemId);
+  if (!item) return;
+
+  const list = document.getElementById('dl-step-list');
+  list.innerHTML = item.steps.slice(0,-1).map((label, si) => {
+    const key      = skey(itemId, si);
+    const existing = stepDeadlines[key];
+    const fmtExisting = existing
+      ? new Date(existing + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})
+      : '';
+    return `<div class="dl-step-row" data-si="${si}">
+      <div class="dl-step-num">${si+1}</div>
+      <div class="dl-step-name">${label}</div>
+      ${fmtExisting ? `<div class="dl-step-existing">${fmtExisting}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.dl-step-row').forEach(row =>
+    row.addEventListener('click', () => {
+      list.querySelectorAll('.dl-step-row').forEach(r => r.classList.remove('sel'));
+      row.classList.add('sel');
+      dlStepIdx = +row.dataset.si;
+      const existing = stepDeadlines[skey(dlItemId, dlStepIdx)];
+      document.getElementById('dl-date-input').value = existing || '';
+      document.getElementById('dl-remove').classList.toggle('hidden', !existing);
+    })
+  );
+
+  document.getElementById('dl-date-input').value = '';
+  document.getElementById('dl-remove').classList.add('hidden');
+  document.getElementById('dl-modal').classList.remove('hidden');
+}
+
+document.getElementById('dl-cancel').addEventListener('click', () => {
+  document.getElementById('dl-modal').classList.add('hidden');
+  dlItemId = null; dlStepIdx = null;
+});
+document.getElementById('dl-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) {
+    document.getElementById('dl-modal').classList.add('hidden');
+    dlItemId = null; dlStepIdx = null;
+  }
+});
+document.getElementById('dl-save').addEventListener('click', () => {
+  if (dlStepIdx === null) { showToast('Select a step first'); return; }
+  const date = document.getElementById('dl-date-input').value;
+  if (!date) { showToast('Pick a date'); return; }
+  stepDeadlines[skey(dlItemId, dlStepIdx)] = date;
+  persistDeadlines();
+  document.getElementById('dl-modal').classList.add('hidden');
+  dlItemId = null; dlStepIdx = null;
+  renderProgress();
+  showToast('Deadline saved');
+});
+document.getElementById('dl-remove').addEventListener('click', () => {
+  if (dlStepIdx === null) return;
+  delete stepDeadlines[skey(dlItemId, dlStepIdx)];
+  persistDeadlines();
+  document.getElementById('dl-modal').classList.add('hidden');
+  dlItemId = null; dlStepIdx = null;
+  renderProgress();
+  showToast('Deadline removed');
+});
 
 // ── NOTES ─────────────────────────────────────────────────────────
 const _fbReady = () => db && FIREBASE_CONFIG.apiKey !== 'REPLACE_WITH_YOUR_API_KEY';
