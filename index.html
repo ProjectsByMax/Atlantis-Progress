@@ -700,13 +700,7 @@
       <span class="exp-amount-sym">$</span>
       <input class="exp-amount-input" id="expense-amount" type="number" min="0" step="0.01" placeholder="0.00">
     </div>
-    <div class="modal-sub" style="margin-bottom:6px">Paid by</div>
-    <div class="author-picker" id="expense-payer-picker">
-      <div class="author-chip" data-author="Cyril">Cyril</div>
-      <div class="author-chip" data-author="Gaby">Gaby</div>
-      <div class="author-chip" data-author="Marshall">Marshall</div>
-      <div class="author-chip" data-author="Max">Max</div>
-    </div>
+    <input class="modal-input" id="expense-payer" type="text" placeholder="Who paid?" maxlength="60" style="margin-bottom:10px">
     <div class="modal-sub" style="margin-top:10px;margin-bottom:6px">Receipt</div>
     <div id="expense-receipt-preview-wrap" class="receipt-preview-wrap hidden">
       <img id="expense-receipt-preview-img" class="receipt-preview-img" src="" alt="">
@@ -1955,7 +1949,7 @@ let expensePayer = '';
 function openExpenseModal(itemId) {
   expenseModalItemId = itemId;
   expenseReceiptFile = null;
-  expensePayer = currentUser || '';
+  expensePayer = '';
   const sel = document.getElementById('expense-category');
   sel.innerHTML = '<option value="">— General —</option>' +
     activeSections.map(sec => {
@@ -1967,13 +1961,11 @@ function openExpenseModal(itemId) {
     }).join('');
   document.getElementById('expense-desc').value = '';
   document.getElementById('expense-amount').value = '';
+  document.getElementById('expense-payer').value = '';
   document.getElementById('expense-receipt-preview-wrap').classList.add('hidden');
   const btn = document.getElementById('expense-receipt-btn');
   btn.classList.remove('has-file');
   btn.textContent = '📎 Attach Receipt';
-  document.querySelectorAll('#expense-payer-picker .author-chip').forEach(chip =>
-    chip.classList.toggle('sel', chip.dataset.author === expensePayer)
-  );
   document.getElementById('expense-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('expense-desc').focus(), 50);
 }
@@ -1987,9 +1979,11 @@ async function saveExpense() {
   const desc     = document.getElementById('expense-desc').value.trim();
   const amount   = parseFloat(document.getElementById('expense-amount').value);
   const catId    = document.getElementById('expense-category').value;
+  const paidBy   = document.getElementById('expense-payer').value.trim();
   if (!desc)                       { showToast('Enter a description'); return; }
   if (isNaN(amount) || amount <= 0){ showToast('Enter a valid amount'); return; }
-  if (!expensePayer)               { showToast('Select who paid'); return; }
+  if (!paidBy)                     { showToast('Enter who paid'); return; }
+  expensePayer = paidBy;
   const item = catId ? allItems().find(i => i.id === catId) : null;
   const sec  = item  ? activeSections.find(s => s.id === item.section) : null;
   let receiptUrl = null, receiptPath = '';
@@ -2011,13 +2005,6 @@ async function saveExpense() {
   renderExpenses();
 }
 
-document.querySelectorAll('#expense-payer-picker .author-chip').forEach(chip =>
-  chip.addEventListener('click', () => {
-    expensePayer = chip.dataset.author;
-    document.querySelectorAll('#expense-payer-picker .author-chip').forEach(c =>
-      c.classList.toggle('sel', c.dataset.author === expensePayer));
-  })
-);
 document.getElementById('expense-cancel').addEventListener('click', closeExpenseModal);
 document.getElementById('expense-save').addEventListener('click', saveExpense);
 document.getElementById('expense-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeExpenseModal(); });
