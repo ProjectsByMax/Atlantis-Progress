@@ -402,6 +402,47 @@
     .dl-date-input:focus { border-color: var(--blue); }
     .dl-remove-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; background: rgba(239,68,68,.1); color: var(--red); transition: opacity .15s; }
     .dl-remove-btn:active { opacity: .75; }
+
+    /* ── EXPENSES TAB ── */
+    .exp-header  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .exp-title   { font-size: 16px; font-weight: 800; letter-spacing: -.3px; }
+    .exp-add-btn { background: var(--blue); color: #fff; border: none; border-radius: 12px; padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit; transition: opacity .15s; }
+    .exp-add-btn:active { opacity: .75; }
+    .exp-summary { background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); border-radius: 20px; padding: 16px 18px; margin-bottom: 12px; }
+    .exp-summary-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.6); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+    .exp-summary-total { font-size: 30px; font-weight: 800; color: #fff; letter-spacing: -.5px; }
+    .exp-payers { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.15); }
+    .exp-payer-chip { background: rgba(255,255,255,.15); border-radius: 100px; padding: 5px 12px; font-size: 12px; font-weight: 700; color: #fff; }
+    .exp-table-card   { background: var(--card); border-radius: 20px; overflow: hidden; box-shadow: 0 1px 3px rgba(59,130,246,.07), 0 4px 16px rgba(59,130,246,.05); }
+    .exp-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .exp-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 540px; }
+    .exp-table th { background: #DBEAFE; padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; }
+    .exp-table td { padding: 10px 12px; border-bottom: 1px solid var(--soft); vertical-align: middle; }
+    .exp-table tbody tr:last-child td { border-bottom: none; }
+    .exp-receipt-thumb { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); cursor: pointer; display: block; }
+    .exp-del { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: color .15s; font-size: 13px; }
+    .exp-del:active { color: var(--red); }
+    .exp-amount { font-weight: 700; }
+    .exp-empty { padding: 36px; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .exp-empty div { font-size: 32px; margin-bottom: 8px; }
+    /* item money button */
+    .item-expense-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px 4px; border-radius: 6px; display: flex; align-items: center; transition: color .15s; }
+    .item-expense-btn:active { color: var(--green); }
+    .item-expense-btn svg { width: 13px; height: 13px; stroke: currentColor; stroke-width: 2; fill: none; }
+    .item-expense-btn.has-expenses { color: var(--green); }
+    /* expense modal extras */
+    .exp-modal-select { width: 100%; border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 14px; font-family: inherit; color: var(--text); outline: none; transition: border-color .15s; background: var(--card); margin-bottom: 10px; -webkit-appearance: none; appearance: none; }
+    .exp-modal-select:focus { border-color: var(--blue); }
+    .exp-amount-wrap  { position: relative; margin-bottom: 10px; }
+    .exp-amount-sym   { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 15px; font-weight: 600; pointer-events: none; }
+    .exp-amount-input { width: 100%; border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px 12px 28px; font-size: 15px; font-family: inherit; color: var(--text); outline: none; transition: border-color .15s; }
+    .exp-amount-input:focus { border-color: var(--blue); }
+    .receipt-upload-btn { width: 100%; padding: 11px; border-radius: 12px; border: 1.5px dashed var(--border); background: var(--soft); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: border-color .15s, color .15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .receipt-upload-btn:active { border-color: var(--blue); color: var(--blue); }
+    .receipt-upload-btn.has-file { border-color: var(--green); color: var(--green); background: var(--green-tint); }
+    .receipt-preview-wrap { position: relative; display: inline-block; margin-bottom: 8px; }
+    .receipt-preview-img  { max-width: 100%; max-height: 100px; border-radius: 10px; display: block; }
+    .receipt-preview-rm   { position: absolute; top: 4px; right: 4px; background: rgba(239,68,68,.85); border: none; color: #fff; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   </style>
 </head>
 <body>
@@ -511,6 +552,7 @@
     <div class="tab-pane hidden" id="tab-files"></div>
     <div class="tab-pane hidden" id="tab-notes"></div>
     <div class="tab-pane hidden" id="tab-log"></div>
+    <div class="tab-pane hidden" id="tab-expenses"></div>
   </div>
 
   <nav class="bot-nav">
@@ -534,6 +576,10 @@
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Log
     </button>
+    <button class="nav-btn" data-tab="expenses">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Expenses
+    </button>
   </nav>
 </div>
 
@@ -549,6 +595,7 @@
   </div>
 </div>
 <input type="file" id="file-input" style="display:none" multiple accept="image/*,application/pdf,.doc,.docx,.xlsx,.xls">
+<input type="file" id="expense-file-input" style="display:none" accept="image/*,application/pdf">
 
 <div class="modal-overlay hidden" id="gear-modal">
   <div class="modal-card">
@@ -639,6 +686,36 @@
         <button class="modal-btn cancel" id="modal-back">← Back</button>
         <button class="modal-btn save" id="modal-save">Add Item</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="expense-modal">
+  <div class="modal-card">
+    <div class="modal-title">Add Expense</div>
+    <div class="modal-sub" style="margin-bottom:8px">Category</div>
+    <select class="exp-modal-select" id="expense-category"></select>
+    <input class="modal-input" id="expense-desc" type="text" placeholder="Description…" maxlength="120" style="margin-bottom:10px">
+    <div class="exp-amount-wrap">
+      <span class="exp-amount-sym">$</span>
+      <input class="exp-amount-input" id="expense-amount" type="number" min="0" step="0.01" placeholder="0.00">
+    </div>
+    <div class="modal-sub" style="margin-bottom:6px">Paid by</div>
+    <div class="author-picker" id="expense-payer-picker">
+      <div class="author-chip" data-author="Cyril">Cyril</div>
+      <div class="author-chip" data-author="Gaby">Gaby</div>
+      <div class="author-chip" data-author="Marshall">Marshall</div>
+      <div class="author-chip" data-author="Max">Max</div>
+    </div>
+    <div class="modal-sub" style="margin-top:10px;margin-bottom:6px">Receipt</div>
+    <div id="expense-receipt-preview-wrap" class="receipt-preview-wrap hidden">
+      <img id="expense-receipt-preview-img" class="receipt-preview-img" src="" alt="">
+      <button id="expense-receipt-rm" class="receipt-preview-rm">✕</button>
+    </div>
+    <button class="receipt-upload-btn" id="expense-receipt-btn">📎 Attach Receipt</button>
+    <div class="modal-btns" style="margin-top:14px">
+      <button class="modal-btn cancel" id="expense-cancel">Cancel</button>
+      <button class="modal-btn save" id="expense-save">Save Expense</button>
     </div>
   </div>
 </div>
@@ -735,6 +812,7 @@ try {
 // ── STATE ─────────────────────────────────────────────────────────
 let stepStates    = {};
 let attachments   = [];
+let expenses      = [];
 let activeTab     = 'progress';
 let uploadSection = null;
 let activityLog   = [];
@@ -853,6 +931,12 @@ if (db && FIREBASE_CONFIG.apiKey !== 'REPLACE_WITH_YOUR_API_KEY') {
       .sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0));
     renderLog();
   });
+  onSnapshot(collection(db,'expenses'), snap => {
+    expenses = snap.docs.map(d => ({id:d.id, ...d.data()}))
+      .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+    renderExpenses();
+    renderProgress();
+  });
   const layoutRef = doc(db,'config','layout');
   onSnapshot(layoutRef, snap => {
     if (snap.exists()) {
@@ -960,6 +1044,9 @@ function renderProgress() {
       renderProgress();
     })
   );
+  el.querySelectorAll('.item-expense-btn').forEach(btn =>
+    btn.addEventListener('click', () => openExpenseModal(btn.dataset.expenseItem))
+  );
   el.querySelectorAll('.item-clock-btn').forEach(btn =>
     btn.addEventListener('click', () => openDeadlineModal(btn.dataset.clockItem))
   );
@@ -1033,14 +1120,17 @@ function renderItem(item) {
     </div>`;
   }).join('');
 
-  const gearSVG  = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`;
-  const clockSVG = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+  const gearSVG    = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`;
+  const clockSVG   = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+  const moneySVG   = `<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>`;
   const hasAnyDeadline = item.steps.slice(0,-1).some((_,si) => stepDeadlines[skey(item.id,si)]);
+  const hasExpenses    = expenses.some(e => e.itemId === item.id);
   return `
     <div class="item-row${complete?' complete':''}">
       <div class="item-name ${complete?'done':''}">
         ${complete ? '<span class="item-check">✓</span>' : ''}<span>${item.name}</span>
         <span class="item-actions">
+          <button class="item-expense-btn${hasExpenses?' has-expenses':''}" data-expense-item="${item.id}">${moneySVG}</button>
           <button class="item-clock-btn${hasAnyDeadline?' has-deadline':''}" data-clock-item="${item.id}">${clockSVG}</button>
           <button class="item-gear-btn" data-gear-item="${item.id}">${gearSVG}</button>
         </span>
@@ -1764,6 +1854,199 @@ document.getElementById('note-textarea').addEventListener('keydown', e => {
   if (e.key === 'Escape') closeNoteModal();
 });
 
+// ── EXPENSES ─────────────────────────────────────────────────────
+if (!_fbReady()) expenses = JSON.parse(localStorage.getItem('ap_expenses') || '[]');
+function persistExpenses() { if (!_fbReady()) localStorage.setItem('ap_expenses', JSON.stringify(expenses)); }
+
+async function dbAddExpense(data) {
+  const id = 'exp_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  if (_fbReady()) {
+    await setDoc(doc(db,'expenses',id), { ...data, id, createdAt: serverTimestamp() });
+  } else {
+    expenses.unshift({ ...data, id, createdAt: { seconds: Math.floor(Date.now()/1000) } });
+    persistExpenses();
+    renderExpenses();
+  }
+}
+async function dbDeleteExpense(id, storagePath) {
+  if (_fbReady()) {
+    await deleteDoc(doc(db,'expenses',id));
+    if (storagePath) await deleteObject(ref(storage, storagePath)).catch(() => {});
+  } else {
+    expenses = expenses.filter(e => e.id !== id);
+    persistExpenses();
+    renderExpenses();
+  }
+}
+
+function renderExpenses() {
+  const el = document.getElementById('tab-expenses');
+  if (!el) return;
+  const header = `<div class="exp-header">
+    <div class="exp-title">Expenses</div>
+    <button class="exp-add-btn" id="exp-add-btn-inner">+ Add</button>
+  </div>`;
+  if (!expenses.length) {
+    el.innerHTML = header + `<div class="exp-table-card"><div class="exp-empty"><div>💰</div>No expenses yet.<br>Tap $ on any item to log one.</div></div>`;
+    document.getElementById('exp-add-btn-inner').addEventListener('click', () => openExpenseModal(null));
+    return;
+  }
+  const total = expenses.reduce((s,e) => s + (parseFloat(e.amount)||0), 0);
+  const payerTotals = {};
+  expenses.forEach(e => {
+    if (e.paidBy) payerTotals[e.paidBy] = (payerTotals[e.paidBy]||0) + (parseFloat(e.amount)||0);
+  });
+  const fmt = n => n.toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  const summaryHTML = `<div class="exp-summary">
+    <div class="exp-summary-label">Total Expenses</div>
+    <div class="exp-summary-total">$${fmt(total)}</div>
+    <div class="exp-payers">
+      ${Object.entries(payerTotals).map(([name,amt]) =>
+        `<div class="exp-payer-chip">${escHtml(name)}: $${fmt(amt)}</div>`
+      ).join('')}
+    </div>
+  </div>`;
+  const tableRows = expenses.map(e => {
+    const date = e.createdAt?.seconds
+      ? new Date(e.createdAt.seconds*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+      : '';
+    const receiptCell = e.receiptUrl
+      ? `<img class="exp-receipt-thumb" src="${e.receiptUrl}" alt="Receipt" data-receipt-url="${e.receiptUrl}">`
+      : '—';
+    return `<tr>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">${date}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(e.itemName||'General')}</td>
+      <td>${escHtml(e.desc||'')}</td>
+      <td class="exp-amount" style="white-space:nowrap">$${fmt(parseFloat(e.amount||0))}</td>
+      <td><span class="note-author" data-a="${escHtml(e.paidBy||'')}" style="font-size:13px">${escHtml(e.paidBy||'—')}</span></td>
+      <td>${receiptCell}</td>
+      <td><button class="exp-del" data-exp-id="${e.id}" data-exp-path="${e.receiptPath||''}">✕</button></td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = header + summaryHTML + `
+    <div class="exp-table-card">
+      <div class="exp-table-scroll">
+        <table class="exp-table">
+          <thead><tr>
+            <th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Paid By</th><th>Receipt</th><th></th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  document.getElementById('exp-add-btn-inner').addEventListener('click', () => openExpenseModal(null));
+  el.querySelectorAll('.exp-del').forEach(btn =>
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this expense?')) return;
+      await dbDeleteExpense(btn.dataset.expId, btn.dataset.expPath);
+      showToast('Expense deleted');
+    })
+  );
+  el.querySelectorAll('.exp-receipt-thumb').forEach(img =>
+    img.addEventListener('click', () => window.open(img.dataset.receiptUrl, '_blank'))
+  );
+}
+
+// ── EXPENSE MODAL ────────────────────────────────────────────────
+let expenseModalItemId = null;
+let expenseReceiptFile = null;
+let expensePayer = '';
+
+function openExpenseModal(itemId) {
+  expenseModalItemId = itemId;
+  expenseReceiptFile = null;
+  expensePayer = currentUser || '';
+  const sel = document.getElementById('expense-category');
+  sel.innerHTML = '<option value="">— General —</option>' +
+    activeSections.map(sec => {
+      const items = allItems().filter(i => i.section === sec.id);
+      if (!items.length) return '';
+      return `<optgroup label="${escHtml(sec.name)}">${items.map(i =>
+        `<option value="${i.id}"${i.id === itemId ? ' selected' : ''}>${escHtml(i.name)}</option>`
+      ).join('')}</optgroup>`;
+    }).join('');
+  document.getElementById('expense-desc').value = '';
+  document.getElementById('expense-amount').value = '';
+  document.getElementById('expense-receipt-preview-wrap').classList.add('hidden');
+  const btn = document.getElementById('expense-receipt-btn');
+  btn.classList.remove('has-file');
+  btn.textContent = '📎 Attach Receipt';
+  document.querySelectorAll('#expense-payer-picker .author-chip').forEach(chip =>
+    chip.classList.toggle('sel', chip.dataset.author === expensePayer)
+  );
+  document.getElementById('expense-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('expense-desc').focus(), 50);
+}
+function closeExpenseModal() {
+  document.getElementById('expense-modal').classList.add('hidden');
+  expenseModalItemId = null;
+  expenseReceiptFile = null;
+  expensePayer = '';
+}
+async function saveExpense() {
+  const desc     = document.getElementById('expense-desc').value.trim();
+  const amount   = parseFloat(document.getElementById('expense-amount').value);
+  const catId    = document.getElementById('expense-category').value;
+  if (!desc)                       { showToast('Enter a description'); return; }
+  if (isNaN(amount) || amount <= 0){ showToast('Enter a valid amount'); return; }
+  if (!expensePayer)               { showToast('Select who paid'); return; }
+  const item = catId ? allItems().find(i => i.id === catId) : null;
+  const sec  = item  ? activeSections.find(s => s.id === item.section) : null;
+  let receiptUrl = null, receiptPath = '';
+  if (expenseReceiptFile && firebaseReady()) {
+    try {
+      const ts   = Date.now();
+      const safe = expenseReceiptFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      const sRef = ref(storage, `receipts/${ts}_${safe}`);
+      const snap = await uploadBytes(sRef, expenseReceiptFile);
+      receiptUrl  = await getDownloadURL(snap.ref);
+      receiptPath = snap.ref.fullPath;
+    } catch(e) { console.error(e); showToast('Receipt upload failed'); }
+  } else if (expenseReceiptFile) {
+    receiptUrl = URL.createObjectURL(expenseReceiptFile);
+  }
+  closeExpenseModal();
+  await dbAddExpense({ itemId: catId||null, itemName: item?item.name:'General', sectionName: sec?sec.name:'', desc, amount, paidBy: expensePayer, receiptUrl, receiptPath });
+  showToast('✓ Expense saved');
+  renderExpenses();
+}
+
+document.querySelectorAll('#expense-payer-picker .author-chip').forEach(chip =>
+  chip.addEventListener('click', () => {
+    expensePayer = chip.dataset.author;
+    document.querySelectorAll('#expense-payer-picker .author-chip').forEach(c =>
+      c.classList.toggle('sel', c.dataset.author === expensePayer));
+  })
+);
+document.getElementById('expense-cancel').addEventListener('click', closeExpenseModal);
+document.getElementById('expense-save').addEventListener('click', saveExpense);
+document.getElementById('expense-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeExpenseModal(); });
+document.getElementById('expense-receipt-btn').addEventListener('click', () => document.getElementById('expense-file-input').click());
+document.getElementById('expense-file-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  expenseReceiptFile = file;
+  const btn = document.getElementById('expense-receipt-btn');
+  btn.textContent = '✓ ' + file.name;
+  btn.classList.add('has-file');
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById('expense-receipt-preview-img').src = ev.target.result;
+      document.getElementById('expense-receipt-preview-wrap').classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  }
+  e.target.value = '';
+});
+document.getElementById('expense-receipt-rm').addEventListener('click', () => {
+  expenseReceiptFile = null;
+  document.getElementById('expense-receipt-preview-wrap').classList.add('hidden');
+  const btn = document.getElementById('expense-receipt-btn');
+  btn.classList.remove('has-file');
+  btn.textContent = '📎 Attach Receipt';
+});
+
 // ── RENDER: LOG ──────────────────────────────────────────────────
 function renderLog() {
   const el = document.getElementById('tab-log');
@@ -1813,6 +2096,7 @@ renderProgress();
 renderFiles();
 renderLog();
 renderNotes();
+renderExpenses();
 
 </script>
 </body>
