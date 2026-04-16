@@ -420,8 +420,10 @@
     .exp-table td { padding: 10px 12px; border-bottom: 1px solid var(--soft); vertical-align: middle; }
     .exp-table tbody tr:last-child td { border-bottom: none; }
     .exp-receipt-thumb { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); cursor: pointer; display: block; }
-    .exp-del { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: color .15s; font-size: 13px; }
-    .exp-del:active { color: var(--red); }
+    .exp-del  { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: color .15s; font-size: 13px; }
+    .exp-del:active  { color: var(--red); }
+    .exp-edit { background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 6px; font-size: 13px; opacity: .6; transition: opacity .15s; }
+    .exp-edit:active { opacity: 1; }
     .exp-amount { font-weight: 700; }
     .exp-empty { padding: 36px; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.6; }
     .exp-empty div { font-size: 32px; margin-bottom: 8px; }
@@ -1039,7 +1041,7 @@ function renderProgress() {
     })
   );
   el.querySelectorAll('.item-expense-btn').forEach(btn =>
-    btn.addEventListener('click', () => openExpenseModal(btn.dataset.expenseItem))
+    btn.addEventListener('click', () => openExpenseModal(btn.dataset.expenseItem, null))
   );
   el.querySelectorAll('.item-clock-btn').forEach(btn =>
     btn.addEventListener('click', () => openDeadlineModal(btn.dataset.clockItem))
@@ -1232,10 +1234,12 @@ async function uploadFile(file, secId, customName) {
     const sRef = ref(storage, `attachments/${secId}/${ts}_${safe}`);
     const snap = await uploadBytes(sRef, file);
     const url  = await getDownloadURL(snap.ref);
+    const sec = activeSections.find(s => s.id === secId);
     await setDoc(doc(db,'attachments',`${secId}_${ts}`), {
       section:secId, fileName, fileUrl:url, fileType:file.type,
       storagePath:snap.ref.fullPath, uploadedAt:serverTimestamp(), size:file.size,
     });
+    await logActivity('uploaded file', fileName, sec?.name||secId, '');
     showToast('✓ File attached');
   } catch(e) { console.error(e); showToast('Upload failed'); }
 }
@@ -1332,6 +1336,8 @@ async function deleteFile(id, path) {
   try {
     await deleteDoc(doc(db,'attachments',id));
     if (path) await deleteObject(ref(storage,path)).catch(()=>{});
+    const sec = att ? activeSections.find(s => s.id === att.section) : null;
+    await logActivity('deleted file', att?.fileName||id, sec?.name||att?.section||'', '');
     showToast('File deleted');
   } catch(e) { console.error(e); showToast('Delete failed'); }
 }
@@ -1862,6 +1868,16 @@ async function dbAddExpense(data) {
     renderExpenses();
   }
 }
+async function dbUpdateExpense(id, data) {
+  if (_fbReady()) {
+    await updateDoc(doc(db,'expenses',id), data);
+  } else {
+    const idx = expenses.findIndex(e => e.id === id);
+    if (idx !== -1) expenses[idx] = { ...expenses[idx], ...data };
+    persistExpenses();
+    renderExpenses();
+  }
+}
 async function dbDeleteExpense(id, storagePath) {
   if (_fbReady()) {
     await deleteDoc(doc(db,'expenses',id));
@@ -1912,9 +1928,12 @@ function renderExpenses() {
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(e.itemName||'General')}</td>
       <td>${escHtml(e.desc||'')}</td>
       <td class="exp-amount" style="white-space:nowrap">$${fmt(parseFloat(e.amount||0))}</td>
-      <td><span class="note-author" data-a="${escHtml(e.paidBy||'')}" style="font-size:13px">${escHtml(e.paidBy||'—')}</span></td>
+      <td style="font-weight:600">${escHtml(e.paidBy||'—')}</td>
       <td>${receiptCell}</td>
-      <td><button class="exp-del" data-exp-id="${e.id}" data-exp-path="${e.receiptPath||''}">✕</button></td>
+      <td style="white-space:nowrap">
+        <button class="exp-edit" data-exp-id="${e.id}" title="Edit">✏️</button>
+        <button class="exp-del" data-exp-id="${e.id}" data-exp-path="${e.receiptPath||''}">✕</button>
+      </td>
     </tr>`;
   }).join('');
   el.innerHTML = header + summaryHTML + `
@@ -1928,11 +1947,19 @@ function renderExpenses() {
         </table>
       </div>
     </div>`;
-  document.getElementById('exp-add-btn-inner').addEventListener('click', () => openExpenseModal(null));
+  document.getElementById('exp-add-btn-inner').addEventListener('click', () => openExpenseModal(null, null));
+  el.querySelectorAll('.exp-edit').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const exp = expenses.find(e => e.id === btn.dataset.expId);
+      if (exp) openExpenseModal(exp.itemId, exp);
+    })
+  );
   el.querySelectorAll('.exp-del').forEach(btn =>
     btn.addEventListener('click', async () => {
       if (!confirm('Delete this expense?')) return;
+      const exp = expenses.find(e => e.id === btn.dataset.expId);
       await dbDeleteExpense(btn.dataset.expId, btn.dataset.expPath);
+      if (exp) await logActivity('deleted expense', `$${exp.amount} — ${exp.desc}`, exp.itemName, exp.sectionName);
       showToast('Expense deleted');
     })
   );
@@ -1945,11 +1972,15 @@ function renderExpenses() {
 let expenseModalItemId = null;
 let expenseReceiptFile = null;
 let expensePayer = '';
+let expenseEditId = null; // null = new, string = editing
 
-function openExpenseModal(itemId) {
+function openExpenseModal(itemId, existing) {
+  expenseEditId      = existing ? existing.id : null;
   expenseModalItemId = itemId;
   expenseReceiptFile = null;
-  expensePayer = '';
+  expensePayer       = existing ? (existing.paidBy||'') : '';
+  document.querySelector('#expense-modal .modal-title').textContent = existing ? 'Edit Expense' : 'Add Expense';
+  document.getElementById('expense-save').textContent = existing ? 'Save Changes' : 'Save Expense';
   const sel = document.getElementById('expense-category');
   sel.innerHTML = '<option value="">— General —</option>' +
     activeSections.map(sec => {
@@ -1959,13 +1990,22 @@ function openExpenseModal(itemId) {
         `<option value="${i.id}"${i.id === itemId ? ' selected' : ''}>${escHtml(i.name)}</option>`
       ).join('')}</optgroup>`;
     }).join('');
-  document.getElementById('expense-desc').value = '';
-  document.getElementById('expense-amount').value = '';
-  document.getElementById('expense-payer').value = '';
+  document.getElementById('expense-desc').value   = existing ? (existing.desc||'') : '';
+  document.getElementById('expense-amount').value = existing ? (existing.amount||'') : '';
+  document.getElementById('expense-payer').value  = existing ? (existing.paidBy||'') : '';
   document.getElementById('expense-receipt-preview-wrap').classList.add('hidden');
   const btn = document.getElementById('expense-receipt-btn');
   btn.classList.remove('has-file');
-  btn.textContent = '📎 Attach Receipt';
+  if (existing?.receiptUrl) {
+    btn.textContent = '✓ Receipt attached';
+    btn.classList.add('has-file');
+    if (existing.receiptUrl.match(/\.(jpg|jpeg|png|gif|webp)/i)) {
+      document.getElementById('expense-receipt-preview-img').src = existing.receiptUrl;
+      document.getElementById('expense-receipt-preview-wrap').classList.remove('hidden');
+    }
+  } else {
+    btn.textContent = '📎 Attach Receipt';
+  }
   document.getElementById('expense-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('expense-desc').focus(), 50);
 }
@@ -1974,19 +2014,20 @@ function closeExpenseModal() {
   expenseModalItemId = null;
   expenseReceiptFile = null;
   expensePayer = '';
+  expenseEditId = null;
 }
 async function saveExpense() {
-  const desc     = document.getElementById('expense-desc').value.trim();
-  const amount   = parseFloat(document.getElementById('expense-amount').value);
-  const catId    = document.getElementById('expense-category').value;
-  const paidBy   = document.getElementById('expense-payer').value.trim();
-  if (!desc)                       { showToast('Enter a description'); return; }
-  if (isNaN(amount) || amount <= 0){ showToast('Enter a valid amount'); return; }
-  if (!paidBy)                     { showToast('Enter who paid'); return; }
-  expensePayer = paidBy;
+  const desc   = document.getElementById('expense-desc').value.trim();
+  const amount = parseFloat(document.getElementById('expense-amount').value);
+  const catId  = document.getElementById('expense-category').value;
+  const paidBy = document.getElementById('expense-payer').value.trim();
+  if (!desc)                        { showToast('Enter a description'); return; }
+  if (isNaN(amount) || amount <= 0) { showToast('Enter a valid amount'); return; }
+  if (!paidBy)                      { showToast('Enter who paid'); return; }
   const item = catId ? allItems().find(i => i.id === catId) : null;
   const sec  = item  ? activeSections.find(s => s.id === item.section) : null;
-  let receiptUrl = null, receiptPath = '';
+  let receiptUrl  = expenseEditId ? (expenses.find(e => e.id === expenseEditId)?.receiptUrl || null) : null;
+  let receiptPath = expenseEditId ? (expenses.find(e => e.id === expenseEditId)?.receiptPath || '') : '';
   if (expenseReceiptFile && firebaseReady()) {
     try {
       const ts   = Date.now();
@@ -1999,9 +2040,18 @@ async function saveExpense() {
   } else if (expenseReceiptFile) {
     receiptUrl = URL.createObjectURL(expenseReceiptFile);
   }
+  const data = { itemId: catId||null, itemName: item?item.name:'General', sectionName: sec?sec.name:'', desc, amount, paidBy, receiptUrl, receiptPath };
+  const editId = expenseEditId;
   closeExpenseModal();
-  await dbAddExpense({ itemId: catId||null, itemName: item?item.name:'General', sectionName: sec?sec.name:'', desc, amount, paidBy: expensePayer, receiptUrl, receiptPath });
-  showToast('✓ Expense saved');
+  if (editId) {
+    await dbUpdateExpense(editId, data);
+    await logActivity('edited expense', `$${data.amount} — ${data.desc}`, data.itemName, data.sectionName);
+    showToast('✓ Expense updated');
+  } else {
+    await dbAddExpense(data);
+    await logActivity('added expense', `$${data.amount} — ${data.desc} (paid by ${data.paidBy})`, data.itemName, data.sectionName);
+    showToast('✓ Expense saved');
+  }
   renderExpenses();
 }
 
@@ -2034,6 +2084,15 @@ document.getElementById('expense-receipt-rm').addEventListener('click', () => {
   btn.textContent = '📎 Attach Receipt';
 });
 
+async function logActivity(action, detail, itemName, sectionName) {
+  if (!_fbReady()) return;
+  await setDoc(doc(db,'activity',`act_${Date.now()}_${Math.random().toString(36).slice(2,6)}`), {
+    user: currentUser || 'Unknown',
+    action, stepName: detail, itemName: itemName||'', sectionName: sectionName||'',
+    timestamp: serverTimestamp(),
+  });
+}
+
 // ── RENDER: LOG ──────────────────────────────────────────────────
 function renderLog() {
   const el = document.getElementById('tab-log');
@@ -2046,10 +2105,19 @@ function renderLog() {
     const ts = entry.timestamp?.seconds
       ? new Date(entry.timestamp.seconds * 1000).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })
       : '';
-    const verb = entry.action === 'completed' ? 'completed' : 'unchecked';
+    let actionText;
+    if (entry.action === 'completed')       actionText = `completed step <strong>${entry.stepName}</strong> on ${entry.itemName}`;
+    else if (entry.action === 'unchecked')  actionText = `unchecked step <strong>${entry.stepName}</strong> on ${entry.itemName}`;
+    else if (entry.action === 'added expense')   actionText = `added expense <strong>${entry.stepName}</strong> under ${entry.itemName}`;
+    else if (entry.action === 'edited expense')  actionText = `edited expense <strong>${entry.stepName}</strong> under ${entry.itemName}`;
+    else if (entry.action === 'deleted expense') actionText = `deleted expense <strong>${entry.stepName}</strong>`;
+    else if (entry.action === 'uploaded file')   actionText = `uploaded <strong>${entry.stepName}</strong> to ${entry.itemName}`;
+    else if (entry.action === 'deleted file')    actionText = `deleted file <strong>${entry.stepName}</strong> from ${entry.itemName}`;
+    else actionText = `${entry.action} <strong>${entry.stepName}</strong>`;
+    const secLabel = entry.sectionName ? `<span style="color:var(--muted);font-size:12px"> (${entry.sectionName})</span>` : '';
     return `<div class="log-entry">
       <div class="log-who" data-u="${entry.user||''}">${entry.user||'Unknown'}</div>
-      <div class="log-action">${verb} <strong>${entry.stepName}</strong> on ${entry.itemName} <span style="color:var(--muted);font-size:12px">(${entry.sectionName})</span></div>
+      <div class="log-action">${actionText}${secLabel}</div>
       <div class="log-time">${ts}</div>
     </div>`;
   }).join('');
