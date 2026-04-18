@@ -1910,11 +1910,6 @@ function renderExpenses() {
   const summaryHTML = `<div class="exp-summary">
     <div class="exp-summary-label">Total Expenses</div>
     <div class="exp-summary-total">$${fmt(total)}</div>
-    <div class="exp-payers">
-      ${Object.entries(payerTotals).map(([name,amt]) =>
-        `<div class="exp-payer-chip">${escHtml(name)}: $${fmt(amt)}</div>`
-      ).join('')}
-    </div>
   </div>`;
   const tableRows = expenses.map(e => {
     const date = e.createdAt?.seconds
